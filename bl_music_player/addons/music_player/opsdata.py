@@ -61,8 +61,9 @@ def get_context_for_area(area: bpy.types.Area, region_type="WINDOW") -> Dict:
     return {}
 
 
-def set_filebrowser_directory(path: Path) -> None:
+def set_filebrowser_directory(path: Path) -> bpy.types.FileSelectParams:
     area = find_area(bpy.context, 'FILE_BROWSER')
     params = area.spaces.active.params
     params.directory = bytes(path.as_posix(), 'utf-8')
     print(f'set directory to: {path.as_posix()}')
+    return params

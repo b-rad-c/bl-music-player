@@ -46,10 +46,19 @@ audio_device = aud.Device()
 audio_handle = None
 
 
+def stop_audio():
+    global audio_handle
+    try:
+        # stop current audio if playing
+        audio_handle.stop()
+    except AttributeError:
+        pass
+
+
 @persistent
 def init_filebrowser(_):
-    opsdata.set_filebrowser_directory(config.ASSET_DIRECTORY)
-
+    params = opsdata.set_filebrowser_directory(config.ASSET_DIRECTORY)
+    params.display_type = 'LIST_VERTICAL'
 
 @persistent
 def init_active_media_area_obj(_):
@@ -77,23 +86,21 @@ def callback_filename_change(_):
 
     # check active file
     if bpy.context.active_file:
+        # print('file active')
         active_filename = bpy.context.active_file.relative_path
         if active_filename != previous_filename:
             audio_path = active_directory / active_filename
 
             if opsdata.is_audio(audio_path):
-                print(f'new audio: {audio_path=}')
+                # print(f'new audio: {audio_path=}')
                 if play_audio:
-                    try:
-                        # stop current audio if playing
-                        audio_handle.stop()
-                    except AttributeError:
-                        pass
-
+                    stop_audio()
                     sound = aud.Sound(audio_path.as_posix())
                     audio_handle = audio_device.play(sound)
+
     else:
         active_filename = None
+        stop_audio()
     
 
 
