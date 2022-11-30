@@ -20,29 +20,15 @@
 
 from pathlib import Path
 from typing import Dict, Optional
-
 import bpy
 
-from music_player import config
 
-# MEDIA VIEWER
-
-logger = config.LoggerFactory.getLogger(name=__name__)
-
-
-def is_image(filepath: Path) -> bool:
-    EXT_IMG = [
-        ".jpg",
-        ".png",
-        ".exr",
-        ".jpeg",
-        ".tif",
-        ".tiff",
-        ".psd"
+def is_audio(filepath: Path) -> bool:
+    return filepath.suffix.lower() in [
+        ".wav",
+        ".mp3",
+        ".aac"
     ]
-    if filepath.suffix.lower() in EXT_IMG:
-        return True
-    return False
 
 
 def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.Area]:
@@ -56,18 +42,6 @@ def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.
         if area.type == area_name:
             return area
     return None
-
-
-def fit_image_editor_view(
-    context: bpy.types.Context, area: bpy.types.Area = None
-) -> None:
-    if not area:
-        area = find_area(context, "IMAGE_EDITOR")
-        if not area:
-            return
-
-    ctx = get_context_for_area(area)
-    bpy.ops.image.view_all(ctx, fit_view=True)
 
 
 def get_context_for_area(area: bpy.types.Area, region_type="WINDOW") -> Dict:
@@ -85,3 +59,10 @@ def get_context_for_area(area: bpy.types.Area, region_type="WINDOW") -> Dict:
             ctx["screen"] = area.id_data
             return ctx
     return {}
+
+
+def set_filebrowser_directory(path: Path) -> None:
+    area = find_area(bpy.context, 'FILE_BROWSER')
+    params = area.spaces.active.params
+    params.directory = bytes(path.as_posix(), 'utf-8')
+    print(f'set directory to: {path.as_posix()}')

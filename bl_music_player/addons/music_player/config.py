@@ -24,6 +24,9 @@ import json
 import logging
 
 
+ASSET_DIRECTORY = Path(__file__).parent / 'assets'
+
+
 class LoggerFactory:
 
     """
@@ -37,7 +40,7 @@ class LoggerFactory:
 
 
 def get_config_file() -> Path:
-    path = bpy.utils.user_resource("CONFIG", path="media_viewer", create=True)
+    path = bpy.utils.user_resource("CONFIG", path="music_player", create=True)
     return Path(path) / "config.json"
 
 
