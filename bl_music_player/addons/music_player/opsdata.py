@@ -21,6 +21,8 @@
 from pathlib import Path
 from typing import Dict, Optional
 import bpy
+from glob import glob
+from music_player.config import VISUALIZER_DIRECTORY
 
 
 def is_audio(filepath: Path) -> bool:

@@ -23,9 +23,13 @@ import bpy
 import json 
 import logging
 
+_parent_directory: Path     = Path(__file__).parent
+MUSIC_DIRECTORY: Path       = _parent_directory / 'music'
+VISUALIZER_DIRECTORY: Path  = _parent_directory / 'visualizers'
+CONFIG_DIRECTORY: Path      = Path(bpy.utils.user_resource('CONFIG', path='music_player', create=True))
+CONFIG_FILE_PATH: Path      = CONFIG_DIRECTORY / 'config.json'
 
-ASSET_DIRECTORY = Path(__file__).parent / 'assets'
-
+DEFAULT_CONFIG = {}
 
 class LoggerFactory:
 
@@ -39,26 +43,15 @@ class LoggerFactory:
         return logger
 
 
-def get_config_file() -> Path:
-    path = bpy.utils.user_resource("CONFIG", path="music_player", create=True)
-    return Path(path) / "config.json"
-
-
 def save_config(config: dict):
-    with open(get_config_file().as_posix(), 'w') as f:
-        json.dump(config, f, indent=4)
+    with open(CONFIG_FILE_PATH.as_posix(), 'w+') as config_file:
+        json.dump(config, config_file, indent=4)
 
 
 def load_config():
-    path = get_config_file()
-
-    # make config file if it doesn't exist
-    if not path.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        default_config = {}
-        save_config(default_config)
-        print(f"Created config file: {path.as_posix()}")
-        return default_config
+    if not CONFIG_FILE_PATH.exists():
+        save_config(DEFAULT_CONFIG)
+        return DEFAULT_CONFIG
     else:
-        with open(path.as_posix(), "r") as file:
+        with open(CONFIG_FILE_PATH.as_posix(), 'r') as file:
             return json.load(file)
