@@ -2,55 +2,58 @@ from typing import Any
 import bpy
 
 
-def MV_TOPBAR_upper_bar(self: Any, context: bpy.types.Context) -> None:
-    layout: bpy.types.UILayout = self.layout
-    row = layout.row(align=True)
-    row.operator("wm.quit_blender", text="Quit", icon="QUIT")
+#
+# menus
+#
+
+def MP_TOPBAR_draw(self, _) -> None:
+    self.layout.menu('MP_TOPBAR_MT_file_menu')
+    self.layout.menu('MP_TOPBAR_MT_player_menu')
+    self.layout.menu('MP_TOPBAR_MT_window_menu')
+
+class MP_TOPBAR_MT_file_menu(bpy.types.Menu):
+    bl_idname = 'MP_TOPBAR_MT_file_menu'
+    bl_label = 'File'
+
+    def draw(self, _) -> None:
+        row = self.layout.row(align=True)
+        row.operator('wm.quit_blender', text='Quit', icon='QUIT')
 
 
-def MV_TOPBAR_MT_file_menu_draw(self: Any, context: bpy.types.Context) -> None:
-    self.layout.menu("MV_TOPBAR_MT_file_menu")
+class MP_TOPBAR_MT_player_menu(bpy.types.Menu):
+    bl_idname = 'MP_TOPBAR_MT_player_menu'
+    bl_label = 'Player'
+
+    def draw(self, _) -> None:
+        row = self.layout.row(align=True)
+        row.operator('screen.animation_cancel', text='Stop', icon='SNAP_FACE')
 
 
-def MV_TOPBAR_MT_window_menu_draw(self: Any, context: bpy.types.Context) -> None:
-    self.layout.menu("MV_TOPBAR_MT_window_menu")
+class MP_TOPBAR_MT_window_menu(bpy.types.Menu):
+    bl_idname = 'MP_TOPBAR_MT_window_menu'
+    bl_label = 'Window'
 
-
-class MV_TOPBAR_MT_file_menu(bpy.types.Menu):
-    bl_idname = "MV_TOPBAR_MT_file_menu"
-    bl_label = "File"
-
-    def draw(self, context: bpy.types.Context) -> None:
-        MV_TOPBAR_upper_bar(self, context)
-
-
-class MV_TOPBAR_MT_window_menu(bpy.types.Menu):
-    bl_idname = "MV_TOPBAR_MT_window_menu"
-    bl_label = "Window"
-
-    def draw(self, context: bpy.types.Context) -> None:
+    def draw(self, _) -> None:
         layout: bpy.types.UILayout = self.layout
         row = layout.row(align=True)
-        row.operator("wm.window_fullscreen_toggle", icon="FULLSCREEN_ENTER")
+        row.operator('wm.window_fullscreen_toggle', icon='FULLSCREEN_ENTER')
 
+#
+# register
+#
 
-# ----------------REGISTER--------------.
-
-classes = [MV_TOPBAR_MT_file_menu, MV_TOPBAR_MT_window_menu]
+classes = [MP_TOPBAR_MT_file_menu, MP_TOPBAR_MT_player_menu, MP_TOPBAR_MT_window_menu]
 
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.TOPBAR_MT_editor_menus.append(MV_TOPBAR_MT_file_menu_draw)
-    bpy.types.TOPBAR_MT_editor_menus.append(MV_TOPBAR_MT_window_menu_draw)
+    bpy.types.TOPBAR_MT_editor_menus.append(MP_TOPBAR_draw)
 
 
 def unregister():
-    # Remove header draw handler.
-    bpy.types.TOPBAR_MT_editor_menus.remove(MV_TOPBAR_MT_file_menu_draw)
-    bpy.types.TOPBAR_MT_editor_menus.remove(MV_TOPBAR_MT_window_menu_draw)
+    bpy.types.TOPBAR_MT_editor_menus.remove(MP_TOPBAR_draw)
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)

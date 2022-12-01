@@ -33,8 +33,8 @@ from music_player import opsdata, config
 #
 
 
-active_media_area: str = 'SEQUENCE_EDITOR'
-active_media_area_obj: bpy.types.Area = None
+# active_media_area: str = 'SEQUENCE_EDITOR'
+# active_media_area_obj: bpy.types.Area = None
 
 active_directory: Path = ''
 active_filename: Optional[str] = ''
@@ -45,41 +45,78 @@ play_audio: bool = True
 audio_device = aud.Device()
 audio_handle = None
 
-class MP_OP_play_song(bpy.types.Operator):
-
-    bl_idname = 'music_player.play_song'
-    bl_label = 'Play song'
-    bl_description = 'Plays selected song in filebrowser'
-
-    sound_path: bpy.props.StringProperty(name='Sound path', description='The path to a sound file to play')
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        print(f'music_player.play_song({self.sound_path})')
-        return {"FINISHED"}
-        bpy.ops.sequencer.sound_strip_add(
-            filepath=path,
-            #directory="/Users/brad/Code/BlenderProjects/bl-music-player/bl_music_player/addons/music_player/music/",
-            #files=[{"name":"Ketsa - You Best Boogie.mp3", "name":"Ketsa - You Best Boogie.mp3"}],
-            frame_start=1,
-            channel=1,
-            overlap_shuffle_override=True
-        )
-
-
 
 def stop_audio():
     global audio_handle
     try:
-        # stop current audio if playing
         audio_handle.stop()
     except AttributeError:
         pass
 
 
+#
+# operators
+#
+
+
+class MP_OP_play(bpy.types.Operator):
+
+    bl_idname = 'music_player.play'
+    bl_label = 'Play'
+    bl_description = 'Plays a filepath'
+
+    sound_path: bpy.props.StringProperty(name='Sound path', description='The path to a sound file to play')
+
+    def execute(self, _) -> Set[str]:
+        print(f'music_player.play({self.sound_path})')
+        bpy.ops.screen.animation_cancel()
+
+        seq_area = opsdata.find_area(bpy.context, 'SEQUENCE_EDITOR')
+        context = opsdata.get_context_for_area(seq_area)
+
+        bpy.context.scene.frame_set(1)
+
+        bpy.ops.sequencer.sound_strip_add(
+            context,
+            filepath=self.sound_path,
+            frame_start=1,
+            channel=1
+        )
+
+        # print('\tbaking...')
+        # bpy.ops.graph.sound_bake()
+
+        print('\tplaying...')
+
+        bpy.ops.screen.animation_play()
+
+        print('\tdone.')
+        return {"FINISHED"}
+
+
+
+
+#
+# handlers
+#
+
+@persistent
+def init_3d_viewport(_):
+    print('init_3d_viewport()')
+    for area in bpy.context.screen.areas:
+        if area.type == 'VIEW_3D':
+            for space in area.spaces:
+                if space.type == 'VIEW_3D':
+                    space.shading.type = 'RENDERED'
+
+    print('\t-> done')
+
 @persistent
 def init_filebrowser(_):
+    print('init_filebrowser()')
     params = opsdata.set_filebrowser_directory(config.MUSIC_DIRECTORY)
     params.display_type = 'LIST_VERTICAL'
+    print('\t-> done')
 
 
 @persistent
@@ -88,14 +125,20 @@ def load_visualizers(_):
     path = config.VISUALIZER_DIRECTORY / 'waveform.blend'
     with bpy.data.libraries.load(path.as_posix()) as (data_from, data_to):
         data_to.scenes = ['main']
+    
+    main = bpy.data.scenes['main']
+
+    for window in bpy.data.window_managers['WinMan'].windows:
+        window.scene = main
+
     print('\t-> done')
 
 
-@persistent
-def init_active_media_area_obj(_):
-    global active_media_area_obj
-    global active_media_area
-    active_media_area_obj = opsdata.find_area(bpy.context, active_media_area)
+# @persistent
+# def init_active_media_area_obj(_):
+#     global active_media_area_obj
+#     global active_media_area
+#     active_media_area_obj = opsdata.find_area(bpy.context, active_media_area)
 
 
 @persistent
@@ -107,7 +150,7 @@ def callback_filename_change(_):
     global previous_filename
     global play_audio
     global audio_device
-    global audio_handle
+    
 
     # update globals
     previous_directory = active_directory
@@ -126,9 +169,8 @@ def callback_filename_change(_):
                 # print(f'new audio: {audio_path=}')
                 if play_audio:
                     stop_audio()
-                    sound = aud.Sound(audio_path.as_posix())
-                    audio_handle = audio_device.play(sound)
-                    bpy.ops.music_player.play_song(sound_path=audio_path.as_posix())
+                    
+                    bpy.ops.music_player.play(sound_path=audio_path.as_posix())
 
     else:
         active_filename = None
@@ -137,9 +179,12 @@ def callback_filename_change(_):
 
 
 
-# ----------------REGISTER--------------.
-classes = [MP_OP_play_song]
-load_post_handlers = [init_active_media_area_obj, init_filebrowser, load_visualizers]
+#
+# register
+#
+
+classes = [MP_OP_play]
+load_post_handlers = [init_3d_viewport, init_filebrowser, load_visualizers]
 draw_handlers_fb: List[Callable] = []
 
 
