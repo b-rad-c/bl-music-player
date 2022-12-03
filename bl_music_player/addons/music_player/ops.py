@@ -45,6 +45,8 @@ play_audio: bool = True
 audio_device = aud.Device()
 audio_handle = None
 
+screen_index: int = 1
+
 
 def stop_audio():
     global audio_handle
@@ -95,11 +97,56 @@ class MP_OP_play(bpy.types.Operator):
 
         bpy.ops.screen.animation_play(sync=True)
         print('\tdone.')
-        return {"FINISHED"}
+        return {'FINISHED'}
 
 
+class MV_OP_screen_cycle(bpy.types.Operator):
+    bl_idname = 'music_player.screen_cycle'
+    bl_label = 'screen_cycle'
+    bl_description = 'screen_cycle'
 
 
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        global screen_index
+
+        bpy.ops.screen.screen_set(delta=screen_index)
+        screen_index *= -1
+
+        init_3d_viewport(None)
+
+        return {'FINISHED'}
+
+
+class MV_OT_close_filebrowser(bpy.types.Operator):
+
+    bl_idname = 'music_player.close_filebrowser'
+    bl_label = 'Close Filebrowser'
+    bl_description = 'Close filebrowser area'
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        file_browser_area = opsdata.find_area(context, 'FILE_BROWSER')
+
+        if file_browser_area:
+            opsdata.close_area(file_browser_area)
+
+        return {'FINISHED'}
+
+
+class MV_OT_fullscreen(bpy.types.Operator):
+    bl_idname = 'music_player.fullscreen'
+    bl_label = 'Fullscreen (player)'
+    bl_description = 'fullscreen'
+
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        view_3d_area = opsdata.find_area(context, 'VIEW_3D')
+        view_3d_context = opsdata.get_context_for_area(view_3d_area)
+
+        with bpy.context.temp_override(**view_3d_context):
+            bpy.ops.screen.header_toggle_menus()
+            bpy.ops.screen.screen_full_area()
+        
+        return {'FINISHED'}
 #
 # handlers
 #
@@ -112,6 +159,8 @@ def init_3d_viewport(_):
             for space in area.spaces:
                 if space.type == 'VIEW_3D':
                     space.shading.type = 'RENDERED'
+                    space.show_gizmo = False
+                    space.overlay.show_overlays = False
 
     print('\t-> done')
 
@@ -121,22 +170,6 @@ def init_filebrowser(_):
     params = opsdata.set_filebrowser_directory(config.MUSIC_DIRECTORY)
     params.display_type = 'LIST_VERTICAL'
     print('\t-> done')
-
-
-# @persistent
-# def load_visualizers(_):
-#     print('load_visualizers()')
-#     path = config.VISUALIZER_DIRECTORY / 'waveform.blend'
-#     with bpy.data.libraries.load(path.as_posix()) as (data_from, data_to):
-#         data_to.scenes = ['main']
-    
-#     main = bpy.data.scenes['main']
-
-#     for window in bpy.data.window_managers['WinMan'].windows:
-#         window.scene = main
-
-#     print('\t-> done')
-
 
 
 @persistent
@@ -181,7 +214,7 @@ def callback_filename_change(_):
 # register
 #
 
-classes = [MP_OP_play]
+classes = [MP_OP_play, MV_OT_close_filebrowser, MV_OP_screen_cycle, MV_OT_fullscreen]
 load_post_handlers = [init_3d_viewport, init_filebrowser]
 draw_handlers_fb: List[Callable] = []
 
@@ -196,7 +229,7 @@ def register():
 
     draw_handlers_fb.append(
         bpy.types.SpaceFileBrowser.draw_handler_add(
-            callback_filename_change, (None,), "WINDOW", "POST_PIXEL"
+            callback_filename_change, (None,), 'WINDOW', 'POST_PIXEL'
         )
     )
 
@@ -205,7 +238,7 @@ def unregister():
 
     # Remove handlers.
     for handler in draw_handlers_fb:
-        bpy.types.SpaceFileBrowser.draw_handler_remove(handler, "WINDOW")
+        bpy.types.SpaceFileBrowser.draw_handler_remove(handler, 'WINDOW')
 
     for handler in load_post_handlers:
         bpy.app.handlers.load_post.remove(handler)

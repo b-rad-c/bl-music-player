@@ -76,3 +76,7 @@ def del_all_sequences(context: bpy.types.Context) -> None:
         context.scene.sequence_editor.sequences.remove(
             context.scene.sequence_editor.sequences[seq_name]
         )
+
+
+def close_area(area: bpy.types.Area) -> None:
+    bpy.ops.screen.area_close(get_context_for_area(area))
