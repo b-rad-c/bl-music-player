@@ -67,29 +67,33 @@ class MP_OP_play(bpy.types.Operator):
 
     sound_path: bpy.props.StringProperty(name='Sound path', description='The path to a sound file to play')
 
-    def execute(self, _) -> Set[str]:
+    def execute(self, context) -> Set[str]:
         print(f'music_player.play({self.sound_path})')
+
+        # reset sequence
         bpy.ops.screen.animation_cancel()
-
-        seq_area = opsdata.find_area(bpy.context, 'SEQUENCE_EDITOR')
-        context = opsdata.get_context_for_area(seq_area)
-
         bpy.context.scene.frame_set(1)
+        opsdata.del_all_sequences(context)
 
+        # add audio to sequence
+        seq_area = opsdata.find_area(bpy.context, 'SEQUENCE_EDITOR')
+        seq_context = opsdata.get_context_for_area(seq_area)
         bpy.ops.sequencer.sound_strip_add(
-            context,
+            seq_context,
             filepath=self.sound_path,
             frame_start=1,
             channel=1
         )
+        bpy.ops.sequencer.view_all(seq_context)
 
-        # print('\tbaking...')
-        # bpy.ops.graph.sound_bake()
+        print('\tbaking...')
+        graph_area = opsdata.find_area(bpy.context, 'GRAPH_EDITOR')
+        graph_context = opsdata.get_context_for_area(graph_area)
+        bpy.ops.graph.sound_bake(graph_context, filepath=self.sound_path)
 
         print('\tplaying...')
 
-        bpy.ops.screen.animation_play()
-
+        bpy.ops.screen.animation_play(sync=True)
         print('\tdone.')
         return {"FINISHED"}
 
@@ -119,26 +123,20 @@ def init_filebrowser(_):
     print('\t-> done')
 
 
-@persistent
-def load_visualizers(_):
-    print('load_visualizers()')
-    path = config.VISUALIZER_DIRECTORY / 'waveform.blend'
-    with bpy.data.libraries.load(path.as_posix()) as (data_from, data_to):
-        data_to.scenes = ['main']
-    
-    main = bpy.data.scenes['main']
-
-    for window in bpy.data.window_managers['WinMan'].windows:
-        window.scene = main
-
-    print('\t-> done')
-
-
 # @persistent
-# def init_active_media_area_obj(_):
-#     global active_media_area_obj
-#     global active_media_area
-#     active_media_area_obj = opsdata.find_area(bpy.context, active_media_area)
+# def load_visualizers(_):
+#     print('load_visualizers()')
+#     path = config.VISUALIZER_DIRECTORY / 'waveform.blend'
+#     with bpy.data.libraries.load(path.as_posix()) as (data_from, data_to):
+#         data_to.scenes = ['main']
+    
+#     main = bpy.data.scenes['main']
+
+#     for window in bpy.data.window_managers['WinMan'].windows:
+#         window.scene = main
+
+#     print('\t-> done')
+
 
 
 @persistent
@@ -184,7 +182,7 @@ def callback_filename_change(_):
 #
 
 classes = [MP_OP_play]
-load_post_handlers = [init_3d_viewport, init_filebrowser, load_visualizers]
+load_post_handlers = [init_3d_viewport, init_filebrowser]
 draw_handlers_fb: List[Callable] = []
 
 

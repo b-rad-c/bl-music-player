@@ -69,3 +69,10 @@ def set_filebrowser_directory(path: Path) -> bpy.types.FileSelectParams:
     params.directory = bytes(path.as_posix(), 'utf-8')
     # print(f'set directory to: {path.as_posix()}')
     return params
+
+
+def del_all_sequences(context: bpy.types.Context) -> None:
+    for seq_name in [s.name for s in context.scene.sequence_editor.sequences_all]:
+        context.scene.sequence_editor.sequences.remove(
+            context.scene.sequence_editor.sequences[seq_name]
+        )

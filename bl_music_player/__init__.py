@@ -42,8 +42,10 @@ class AppStateStore(AppOverrideState):
 
         bpy.types.STATUSBAR_HT_header.draw = lambda self, context: None
         bpy.types.IMAGE_HT_header.draw = lambda self, context: None
+        bpy.types.GRAPH_HT_header.draw = lambda self, context: None
         bpy.types.SEQUENCER_HT_header.draw = lambda self, context: None
         bpy.types.TEXT_HT_header.draw = lambda self, context: None
+        bpy.types.VIEW3D_HT_header.draw = lambda self, context: None
         bpy.types.TOPBAR_HT_upper_bar.draw_left = draw_left_override
         bpy.types.TOPBAR_HT_upper_bar.draw_right = lambda self, context: None
         bpy.types.TOPBAR_MT_editor_menus.draw = lambda self, context: None
