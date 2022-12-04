@@ -144,7 +144,8 @@ class MV_OT_fullscreen(bpy.types.Operator):
 
         with bpy.context.temp_override(**view_3d_context):
             bpy.ops.screen.header_toggle_menus()
-            bpy.ops.screen.screen_full_area()
+            bpy.ops.screen.screen_full_area(use_hide_panels=True)
+            bpy.ops.wm.window_fullscreen_toggle()
         
         return {'FINISHED'}
 #
