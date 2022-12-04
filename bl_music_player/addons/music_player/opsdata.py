@@ -19,7 +19,7 @@
 # (c) 2021, Blender Foundation - Paul Golter
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 import bpy
 from glob import glob
 from music_player.config import VISUALIZER_DIRECTORY
@@ -80,3 +80,29 @@ def del_all_sequences(context: bpy.types.Context) -> None:
 
 def close_area(area: bpy.types.Area) -> None:
     bpy.ops.screen.area_close(get_context_for_area(area))
+
+
+def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
+    """
+    Fits frame range of active scene to exactly encapsulate all strips in the Sequence Editor.
+    """
+
+    def get_sort_tuple(strip: bpy.types.Sequence) -> Tuple[int, int]:
+        return (strip.frame_final_start, strip.frame_final_duration)
+    
+    scene = context.scene
+
+    strips = scene.sequence_editor.sequences_all
+
+    if not strips:
+        scene.frame_start = 0
+        scene.frame_end = 0
+        return (0, 0)
+
+    strips = list(strips)
+    strips.sort(key=get_sort_tuple)
+
+    scene.frame_start = strips[0].frame_final_start
+    scene.frame_end = strips[-1].frame_final_end - 1
+
+    return (scene.frame_start, scene.frame_end)

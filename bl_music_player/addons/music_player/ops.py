@@ -42,18 +42,9 @@ previous_directory: Path = ''
 previous_filename: Optional[str] = ''
 
 play_audio: bool = True
-audio_device = aud.Device()
-audio_handle = None
 
 screen_index: int = 1
 
-
-def stop_audio():
-    global audio_handle
-    try:
-        audio_handle.stop()
-    except AttributeError:
-        pass
 
 
 #
@@ -86,6 +77,7 @@ class MP_OP_play(bpy.types.Operator):
             frame_start=1,
             channel=1
         )
+        opsdata.fit_frame_range_to_strips(context)  # seq_context does not have .scene as an attribute?
         bpy.ops.sequencer.view_all(seq_context)
 
         print('\tbaking...')
@@ -100,42 +92,21 @@ class MP_OP_play(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MV_OP_screen_cycle(bpy.types.Operator):
-    bl_idname = 'music_player.screen_cycle'
-    bl_label = 'screen_cycle'
-    bl_description = 'screen_cycle'
+class MP_OP_stop(bpy.types.Operator):
 
-
-    def execute(self, context: bpy.types.Context) -> Set[str]:
-        global screen_index
-
-        bpy.ops.screen.screen_set(delta=screen_index)
-        screen_index *= -1
-
-        init_3d_viewport(None)
-
-        return {'FINISHED'}
-
-
-class MV_OT_close_filebrowser(bpy.types.Operator):
-
-    bl_idname = 'music_player.close_filebrowser'
-    bl_label = 'Close Filebrowser'
-    bl_description = 'Close filebrowser area'
+    bl_idname = 'music_player.stop'
+    bl_label = 'Stop'
+    bl_description = 'Stop playing the current audio.'
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        file_browser_area = opsdata.find_area(context, 'FILE_BROWSER')
-
-        if file_browser_area:
-            opsdata.close_area(file_browser_area)
-
+        bpy.ops.screen.animation_cancel()
         return {'FINISHED'}
 
 
 class MV_OT_fullscreen(bpy.types.Operator):
     bl_idname = 'music_player.fullscreen'
-    bl_label = 'Fullscreen (player)'
-    bl_description = 'fullscreen'
+    bl_label = 'Toggle fullscreen'
+    bl_description = 'Enter or exit fullscreen display mode.'
 
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -148,6 +119,7 @@ class MV_OT_fullscreen(bpy.types.Operator):
             bpy.ops.wm.window_fullscreen_toggle()
         
         return {'FINISHED'}
+
 #
 # handlers
 #
@@ -162,6 +134,13 @@ def init_3d_viewport(_):
                     space.shading.type = 'RENDERED'
                     space.show_gizmo = False
                     space.overlay.show_overlays = False
+
+                    # space.overlay.wireframe_opacity = 0.0
+                    # space.show_object_viewport_lattice = False
+                    # space.show_object_viewport_meta = False
+                    # sp = space
+                    # ov = space.overlay
+                    # breakpoint()
 
     print('\t-> done')
 
@@ -200,13 +179,12 @@ def callback_filename_change(_):
             if opsdata.is_audio(audio_path):
                 # print(f'new audio: {audio_path=}')
                 if play_audio:
-                    stop_audio()
-                    
+                    bpy.ops.music_player.stop()
                     bpy.ops.music_player.play(sound_path=audio_path.as_posix())
 
     else:
         active_filename = None
-        stop_audio()
+        bpy.ops.music_player.stop()
     
 
 
@@ -215,7 +193,7 @@ def callback_filename_change(_):
 # register
 #
 
-classes = [MP_OP_play, MV_OT_close_filebrowser, MV_OP_screen_cycle, MV_OT_fullscreen]
+classes = [MP_OP_play, MP_OP_stop, MV_OT_fullscreen]
 load_post_handlers = [init_3d_viewport, init_filebrowser]
 draw_handlers_fb: List[Callable] = []
 
