@@ -21,6 +21,7 @@ from music_player import (
     config,
     opsdata,
     ops,
+    shortcuts,
     ui
 )
 
@@ -42,18 +43,21 @@ if _need_reload:
     config = importlib.reload(config)
     opsdata = importlib.reload(opsdata)
     ops = importlib.reload(ops)
+    shortcuts = importlib.reload(shortcuts)
     ui = importlib.reload(ui)
 
 
 def register():
     print('Addon Register', __file__)
     ops.register()
+    shortcuts.register()
     ui.register()
 
 
 def unregister():
     print('Addon Unregister', __file__)
     ui.unregister()
+    shortcuts.unregister()
     ops.unregister()
 
 

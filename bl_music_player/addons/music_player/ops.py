@@ -41,9 +41,11 @@ previous_filename: Optional[str] = ''
 
 play_audio = True
 screen_index = 1
-is_fullscreen = False
 random_vis_on_play = True
+is_fullscreen = False
+is_reverting_fullscreen = False
 
+active_file = None
 
 #
 # operators
@@ -146,30 +148,39 @@ class MP_OP_stop(bpy.types.Operator):
 
 class MV_OT_fullscreen(bpy.types.Operator):
     bl_idname = 'music_player.fullscreen'
-    bl_label = 'Toggle fullscreen'
-    bl_description = 'Enter or exit fullscreen display mode.'
-
+    bl_label = 'fullscreen'
+    bl_description = 'fullscreen'
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global is_fullscreen
+        global is_reverting_fullscreen
+
+        print(f'music_player.fullscreen {is_fullscreen=} {is_reverting_fullscreen=}')
 
         view_3d_area = opsdata.find_area(context, 'VIEW_3D')
-        view_3d_context = opsdata.get_context_for_area(view_3d_area)
+        view_3d_context = context.copy()
+        view_3d_context['area'] = view_3d_area
 
-        with bpy.context.temp_override(**view_3d_context):
-            #bpy.ops.wm.window_fullscreen_toggle()
-            #bpy.ops.screen.header_toggle_menus()
-
-            if is_fullscreen:
+        with context.temp_override(**view_3d_context):
+            if is_reverting_fullscreen:
+                # for some reason this operator runs multiple times when called?
+                # use this global to ensure only the first instance runs to prevent race conditions
+                print('music_player.fullscreen_test - cancel')
+                return {'CANCELLED'}
+            elif is_fullscreen:
+                is_reverting_fullscreen = True
+                print('music_player.fullscreen_test - revert')
+                bpy.ops.screen.header_toggle_menus()
                 bpy.ops.screen.back_to_previous()
+                bpy.ops.wm.window_fullscreen_toggle()
+                is_reverting_fullscreen = False
             else:
+                print('music_player.fullscreen_test - enable')
                 bpy.ops.screen.header_toggle_menus()
                 bpy.ops.screen.screen_full_area(use_hide_panels=True)
-                #bpy.context.window.workspace = bpy.data.workspaces['APP_CLEAN']
                 bpy.ops.wm.window_fullscreen_toggle()
 
-            is_fullscreen = not is_fullscreen
-        
+        is_fullscreen = not is_fullscreen
         return {'FINISHED'}
 
 #
@@ -204,7 +215,7 @@ def callback_filename_change(_):
     global previous_directory
     global previous_filename
     global play_audio
-    
+    global is_reverting_fullscreen
 
     # update globals
     previous_directory = active_directory
@@ -213,7 +224,7 @@ def callback_filename_change(_):
     previous_filename = active_filename
 
     # check active file
-    if bpy.context.active_file:
+    if bpy.context.active_file and not is_reverting_fullscreen:
         active_filename = bpy.context.active_file.relative_path
         if active_filename != previous_filename:
             audio_path = active_directory / active_filename
@@ -227,8 +238,6 @@ def callback_filename_change(_):
         active_filename = None
         bpy.ops.music_player.stop()
     
-
-
 
 #
 # register
