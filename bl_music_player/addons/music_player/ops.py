@@ -148,7 +148,7 @@ class MP_OP_stop(bpy.types.Operator):
 
 class MV_OT_fullscreen(bpy.types.Operator):
     bl_idname = 'music_player.fullscreen'
-    bl_label = 'fullscreen'
+    bl_label = 'Fullscreen + Fill Area'
     bl_description = 'fullscreen'
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
@@ -157,8 +157,8 @@ class MV_OT_fullscreen(bpy.types.Operator):
 
         print(f'music_player.fullscreen {is_fullscreen=} {is_reverting_fullscreen=}')
 
-        view_3d_area = opsdata.find_area(context, 'VIEW_3D')
-        view_3d_context = context.copy()
+        view_3d_area = opsdata.find_area(bpy.context, 'VIEW_3D')
+        view_3d_context = bpy.context.copy()
         view_3d_context['area'] = view_3d_area
 
         with context.temp_override(**view_3d_context):

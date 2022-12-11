@@ -36,8 +36,7 @@ class MP_TOPBAR_MT_window_menu(bpy.types.Menu):
     def draw(self, _) -> None:
         layout: bpy.types.UILayout = self.layout
         column = layout.column(align=True)
-        column.operator('music_player.fullscreen_test', icon='FULLSCREEN_ENTER')
-        column.operator('music_player.fill_window', icon='FULLSCREEN_ENTER')
+        column.operator('music_player.fullscreen', icon='FULLSCREEN_ENTER')
         column.operator('wm.window_fullscreen_toggle', icon='FULLSCREEN_ENTER')
 
 #
