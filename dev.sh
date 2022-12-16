@@ -41,6 +41,7 @@ elif [ "$MODE" = 'package' ]; then
     # remove __pycache__ folders and .DS_Store files
     find $APP_NAME -name __pycache__ -type d -print0 | xargs -0 rm -r --
     find $APP_NAME -name .DS_Store -type f -print0 | xargs -0 rm  --
+    find $APP_NAME -name "*blend1" -type f -print0 | xargs -0 rm  --
 
     # Create dist folder.
     if ! [[ -d "dist" ]]
