@@ -55,7 +55,7 @@ elif [ "$MODE" = 'package' ]; then
 
     # zip it all up.
     zip -r $DIST_PATH $APP_NAME
-    echo "\nzipped $APP_NAME to $DIST_PATH"
+    echo -e "\nzipped $APP_NAME to $DIST_PATH"
    
 elif [ "$MODE" = 'help' ]; then
     echo -e "${HELP}"
