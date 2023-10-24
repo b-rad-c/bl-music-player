@@ -8,7 +8,7 @@ APP_NAME='bl_music_player'
 APP_VERSION='0.0.0'
 
 BL_BIN='/Applications/Blender.app/Contents/MacOS/Blender'
-BL_APP_TEMPLATE_FOLDER='/Users/brad/Library/Application Support/Blender/3.3/scripts/startup/bl_app_templates_user'
+BL_APP_TEMPLATE_FOLDER='/Users/brad/Library/Application Support/Blender/3.6/scripts/startup/bl_app_templates_user'
 BL_APP_TEMPLATE_LINK="${BL_APP_TEMPLATE_FOLDER}/${APP_NAME}"
 
 CURRENT_DIRECTORY=`pwd`
@@ -31,7 +31,11 @@ if [ "$MODE" = "start" ] || [ "$MODE" = "" ]; then
 
 elif [ "$MODE" = 'link' ]; then
     ln -s "$APP_SOURCE" "$BL_APP_TEMPLATE_FOLDER"
-    echo -e "linked:\n\t${APP_SOURCE}\n   ->\n\t${BL_APP_TEMPLATE_FOLDER}"
+    if [ $? -eq 0 ]; then 
+        echo -e "linked:\n\t${APP_SOURCE}\n   ->\n\t${BL_APP_TEMPLATE_FOLDER}"
+    else 
+        echo "error linking app, you may need to create intermediate directories"
+    fi
 
 elif [ "$MODE" = 'unlink' ]; then
     unlink "${BL_APP_TEMPLATE_LINK}"
