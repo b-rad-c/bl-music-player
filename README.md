@@ -1,4 +1,4 @@
-# Blender Music Player App
+# Blender App Template Sample - Music Player
 
 An example Blender App Template music player with sound activated blender music visualizer.
 
