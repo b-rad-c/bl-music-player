@@ -8,12 +8,12 @@ APP_NAME='bl_music_player'
 APP_VERSION='0.0.0'
 
 BL_BIN='/Applications/Blender.app/Contents/MacOS/Blender'
-BL_APP_TEMPLATE_FOLDER='/Users/brad/Library/Application Support/Blender/3.6/scripts/startup/bl_app_templates_user'
+BL_APP_TEMPLATE_FOLDER='/Users/brad/Library/Application Support/Blender/4.3/scripts/startup/bl_app_templates_user'
 BL_APP_TEMPLATE_LINK="${BL_APP_TEMPLATE_FOLDER}/${APP_NAME}"
 
 CURRENT_DIRECTORY=`pwd`
 APP_SOURCE="${CURRENT_DIRECTORY}/${APP_NAME}"
-SITE_PACKAGES="${CURRENT_DIRECTORY}/venv/lib/python3.10/site-packages"
+SITE_PACKAGES="${CURRENT_DIRECTORY}/.venv/lib/python3.11/site-packages"
 ADDON_PATH="${APP_SOURCE}/addons"
 DIST_PATH="dist/${APP_NAME}-${APP_VERSION}.zip"
 

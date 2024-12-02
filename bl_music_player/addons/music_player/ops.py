@@ -109,19 +109,23 @@ class MP_OP_play(bpy.types.Operator):
         # add audio to sequence
         seq_area = opsdata.find_area(bpy.context, 'SEQUENCE_EDITOR')
         seq_context = opsdata.get_context_for_area(seq_area)
-        bpy.ops.sequencer.sound_strip_add(
-            seq_context,
-            filepath=self.sound_path,
-            frame_start=1,
-            channel=1
-        )
+        with context.temp_override(**seq_context):
+            bpy.ops.sequencer.sound_strip_add(
+                filepath=self.sound_path,
+                frame_start=1,
+                channel=1
+            )
+
         opsdata.fit_frame_range_to_strips(context)  # seq_context does not have .scene as an attribute?
-        bpy.ops.sequencer.view_all(seq_context)
+
+        with context.temp_override(**seq_context):
+            bpy.ops.sequencer.view_all()
 
         print('\tbaking...')
         graph_area = opsdata.find_area(bpy.context, 'GRAPH_EDITOR')
         graph_context = opsdata.get_context_for_area(graph_area)
-        bpy.ops.graph.sound_bake(graph_context, filepath=self.sound_path)
+        with context.temp_override(**graph_context):
+            bpy.ops.graph.sound_to_samples(filepath=self.sound_path)
 
         if random_vis_on_play:
             print('\trandomizing...')

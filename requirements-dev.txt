@@ -1,1 +1,1 @@
-fake-bpy-module-3.3
+fake-bpy-module-latest

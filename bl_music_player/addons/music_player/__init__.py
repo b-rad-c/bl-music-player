@@ -31,8 +31,8 @@ bl_info = {
     'name': 'BL Music Player',
     'author': 'B Rad C',
     'description': 'Blender music player addon',
-    'blender': (3, 0, 0),
-    'version': (0, 1, 0),
+    'blender': (4, 3, 0),
+    'version': (0, 2, 0),
 }
 
 _need_reload = 'ops' in locals()
