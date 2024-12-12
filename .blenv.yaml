@@ -1,0 +1,12 @@
+blenv:
+  version: '1'
+environments:
+  default:
+    blender: /Applications/Blender.app/Contents/MacOS/Blender
+    env_file: .env
+    app_template: 'bl_music_player'
+project:
+  addons: {}
+  app_templates:
+    bl_music_player:
+      source: 'bl_music_player'
