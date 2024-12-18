@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Optional, List, Callable, Set
 from random import randint
 
+import blf
 import bpy
 
 from bpy.app.handlers import persistent
@@ -46,6 +47,9 @@ is_fullscreen = False
 is_reverting_fullscreen = False
 
 active_file = None
+
+text_scroll_offset = 333
+text_scroll_increment = 10
 
 #
 # operators
@@ -187,6 +191,32 @@ class MV_OT_fullscreen(bpy.types.Operator):
         is_fullscreen = not is_fullscreen
         return {'FINISHED'}
 
+
+class MP_TEXT_SCROLL_UP(bpy.types.Operator):
+
+    bl_idname = 'music_player.text_scroll_up'
+    bl_label = 'Scroll up'
+    bl_description = 'Scroll text up'
+
+    def execute(self, context) -> Set[str]:
+        global text_scroll_offset
+        text_scroll_offset += text_scroll_increment
+        print(f'scrolling up: {text_scroll_offset}')
+        return {'FINISHED'}
+
+
+class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
+
+    bl_idname = 'music_player.text_scroll_down'
+    bl_label = 'Scroll down'
+    bl_description = 'Scroll text down'
+
+    def execute(self, context) -> Set[str]:
+        global text_scroll_offset
+        text_scroll_offset -= text_scroll_increment
+        print(f'scrolling down {text_scroll_offset}')
+        return {'FINISHED'}
+
 #
 # handlers
 #
@@ -241,35 +271,52 @@ def callback_filename_change(_):
     else:
         active_filename = None
         bpy.ops.music_player.stop()
-    
+
+
+def text_overlay_drawer(self, context):
+    global text_scroll_offset
+    font_id = 0
+    # currently scroll is only responsive if song is playing
+    blf.size(font_id, 54.0)
+    blf.position(font_id, 100, 1000 + text_scroll_offset, 0)
+    blf.draw(font_id, 'Test Header')
+
+    blf.size(font_id, 42.0)
+    blf.position(font_id, 100, 925 + text_scroll_offset, 0)
+    blf.draw(font_id, 'hello.world')
+
 
 #
 # register
 #
 
-classes = [MP_OP_randomize_visualizer, MP_OP_play, MP_OP_stop, MV_OT_fullscreen]
+classes = [MP_OP_randomize_visualizer, MP_OP_play, MP_OP_stop, MV_OT_fullscreen, MP_TEXT_SCROLL_UP, MP_TEXT_SCROLL_DOWN]
 load_post_handlers = [init_3d_viewport, init_filebrowser]
 draw_handlers_fb: List[Callable] = []
-
+draw_handlers_spv3d: List[Callable] = []
 
 def register():
+
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    # Append handlers.
     for handler in load_post_handlers:
         bpy.app.handlers.load_post.append(handler)
 
     draw_handlers_fb.append(
-        bpy.types.SpaceFileBrowser.draw_handler_add(
-            callback_filename_change, (None,), 'WINDOW', 'POST_PIXEL'
-        )
+        bpy.types.SpaceFileBrowser.draw_handler_add(callback_filename_change, (None,), 'WINDOW', 'POST_PIXEL')
+    )
+
+    draw_handlers_spv3d.append(
+        bpy.types.SpaceView3D.draw_handler_add(text_overlay_drawer, (None, None), 'WINDOW', 'POST_PIXEL')
     )
 
 
 def unregister():
 
-    # Remove handlers.
+    for handler in draw_handlers_spv3d:
+        bpy.types.SpaceView3D.draw_handler_remove(handler, 'WINDOW')
+
     for handler in draw_handlers_fb:
         bpy.types.SpaceFileBrowser.draw_handler_remove(handler, 'WINDOW')
 

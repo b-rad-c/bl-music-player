@@ -18,7 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 import bpy
-from music_player.ops import MV_OT_fullscreen
+from music_player.ops import MV_OT_fullscreen, MP_TEXT_SCROLL_UP, MP_TEXT_SCROLL_DOWN
 
 
 addon_keymaps = []
@@ -50,6 +50,18 @@ def register_keymaps():
             keymap,
             keymap.keymap_items.new(
                 MV_OT_fullscreen.bl_idname, value='PRESS', type='F', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_TEXT_SCROLL_UP.bl_idname, value='PRESS', type='UP_ARROW', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_TEXT_SCROLL_UP.bl_idname, value='ANY', type='WHEELUPMOUSE', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_TEXT_SCROLL_DOWN.bl_idname, value='PRESS', type='DOWN_ARROW', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_TEXT_SCROLL_DOWN.bl_idname, value='ANY', type='WHEELDOWNMOUSE', head=True
             ),
         )
     )
