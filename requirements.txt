@@ -1,0 +1,2 @@
+bpy
+numpy<2

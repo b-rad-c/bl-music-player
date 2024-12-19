@@ -106,3 +106,40 @@ def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
     scene.frame_end = strips[-1].frame_final_end - 1
 
     return (scene.frame_start, scene.frame_end)
+
+# 
+
+def cli_load_and_render(sound_path, context):
+
+    print(f'music_player.play({sound_path})')
+
+    # reset sequence
+    bpy.ops.screen.animation_cancel()
+    bpy.context.scene.frame_set(1)
+    del_all_sequences(context)
+    # add audio to sequence
+    seq_area = find_area(bpy.context, 'SEQUENCE_EDITOR')
+    seq_context = get_context_for_area(seq_area)
+    with context.temp_override(**seq_context):
+        bpy.ops.sequencer.sound_strip_add(
+            filepath=sound_path,
+            frame_start=1,
+            channel=1
+        )
+
+    fit_frame_range_to_strips(context)  # seq_context does not have .scene as an attribute?
+
+    # with context.temp_override(**seq_context):
+    #     bpy.ops.sequencer.view_all()
+
+    print('\tbaking...')
+    graph_area = find_area(bpy.context, 'GRAPH_EDITOR')
+    graph_context = get_context_for_area(graph_area)
+    with context.temp_override(**graph_context):
+        bpy.ops.graph.sound_to_samples(filepath=sound_path)
+
+    # write file
+
+    bpy.context.scene.render.filepath = 'movie.mp4' 
+    # bpy.context.scene.render.image_settings.file_format = 'PNG'
+    bpy.ops.render.render(animation=True)
