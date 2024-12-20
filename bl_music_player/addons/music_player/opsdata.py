@@ -21,6 +21,7 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 import bpy
+import time
 from glob import glob
 from music_player.config import VISUALIZER_DIRECTORY
 
@@ -142,4 +143,7 @@ def cli_load_and_render(sound_path, context):
 
     bpy.context.scene.render.filepath = 'movie.mp4' 
     # bpy.context.scene.render.image_settings.file_format = 'PNG'
+    start = time.time()
     bpy.ops.render.render(animation=True)
+    end = time.time()
+    print('render time:', round(end - start, 2), 'seconds')
