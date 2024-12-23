@@ -21,7 +21,6 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 import bpy
-import time
 from glob import glob
 from music_player.config import VISUALIZER_DIRECTORY
 
@@ -110,7 +109,7 @@ def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
 
 # 
 
-def cli_load_and_render(sound_path, context):
+def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
     print(f'music_player.play({sound_path})')
 
@@ -130,8 +129,9 @@ def cli_load_and_render(sound_path, context):
 
     fit_frame_range_to_strips(context)  # seq_context does not have .scene as an attribute?
 
-    # with context.temp_override(**seq_context):
-    #     bpy.ops.sequencer.view_all()
+    if not background:
+        with context.temp_override(**seq_context):
+            bpy.ops.sequencer.view_all()
 
     print('\tbaking...')
     graph_area = find_area(bpy.context, 'GRAPH_EDITOR')
@@ -141,9 +141,8 @@ def cli_load_and_render(sound_path, context):
 
     # write file
 
+    # bpy.ops.wm.save_as_mainfile(filepath='movie.blend')
+
     bpy.context.scene.render.filepath = 'movie.mp4' 
     # bpy.context.scene.render.image_settings.file_format = 'PNG'
-    start = time.time()
-    bpy.ops.render.render(animation=True)
-    end = time.time()
-    print('render time:', round(end - start, 2), 'seconds')
+    

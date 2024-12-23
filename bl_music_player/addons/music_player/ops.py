@@ -97,44 +97,9 @@ class MP_OP_play(bpy.types.Operator):
     sound_path: bpy.props.StringProperty(name='Sound path', description='The path to a sound file to play')
 
     def execute(self, context) -> Set[str]:
-        global random_vis_on_play
-
-        print(f'music_player.play({self.sound_path})')
-
-        # reset sequence
-        bpy.ops.screen.animation_cancel()
-        bpy.context.scene.frame_set(1)
-        opsdata.del_all_sequences(context)
-
-        # add audio to sequence
-        seq_area = opsdata.find_area(bpy.context, 'SEQUENCE_EDITOR')
-        seq_context = opsdata.get_context_for_area(seq_area)
-        with context.temp_override(**seq_context):
-            bpy.ops.sequencer.sound_strip_add(
-                filepath=self.sound_path,
-                frame_start=1,
-                channel=1
-            )
-
-        opsdata.fit_frame_range_to_strips(context)  # seq_context does not have .scene as an attribute?
-
-        with context.temp_override(**seq_context):
-            bpy.ops.sequencer.view_all()
-
-        print('\tbaking...')
-        graph_area = opsdata.find_area(bpy.context, 'GRAPH_EDITOR')
-        graph_context = opsdata.get_context_for_area(graph_area)
-        with context.temp_override(**graph_context):
-            bpy.ops.graph.sound_to_samples(filepath=self.sound_path)
-
-        if random_vis_on_play:
-            print('\trandomizing...')
-            bpy.ops.music_player.randomize_visualizer()
-
-        print('\tplaying...')
+        opsdata.load_and_bake_audio(context, sound_path=self.sound_path)
 
         bpy.ops.screen.animation_play(sync=True)
-        print('\tdone.')
 
         return {'FINISHED'}
 
