@@ -201,7 +201,9 @@ class MP_TEXT_SCROLL_UP(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         global text_scroll_offset
         text_scroll_offset += text_scroll_increment
-        print(f'scrolling up: {text_scroll_offset}')
+        for area in context.screen.areas:
+            area.tag_redraw()
+        # print(f'scrolling up: {text_scroll_offset}')
         return {'FINISHED'}
 
 
@@ -214,7 +216,10 @@ class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         global text_scroll_offset
         text_scroll_offset -= text_scroll_increment
-        print(f'scrolling down {text_scroll_offset}')
+        for area in context.screen.areas:
+            area.tag_redraw()
+        
+        # print(f'scrolling down {text_scroll_offset}')
         return {'FINISHED'}
 
 #
@@ -273,10 +278,14 @@ def callback_filename_change(_):
         bpy.ops.music_player.stop()
 
 
+font_id = 0
+
+blf.enable(0, blf.WORD_WRAP)
+blf.word_wrap(0, 500)
+blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
+# ui_scale = context.preferences.view.ui_scale
 def text_overlay_drawer(self, context):
-    global text_scroll_offset
-    font_id = 0
-    blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
+    
     # currently scroll is only responsive if song is playing
     blf.size(font_id, 54.0)
     blf.position(font_id, 100, 75 + text_scroll_offset, 0)
@@ -284,7 +293,15 @@ def text_overlay_drawer(self, context):
 
     blf.size(font_id, 42.0)
     blf.position(font_id, 100, 0 + text_scroll_offset, 0)
-    blf.draw(font_id, 'hello.world')
+    blf.draw(font_id, 'This is a subtitle')
+
+    blf.size(font_id, 22.0)
+    blf.position(font_id, 100, -75 + text_scroll_offset, 0)
+    
+    blf.draw(font_id, """
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    """.strip())
+
 
 
 #
