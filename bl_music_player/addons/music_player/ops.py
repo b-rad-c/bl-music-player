@@ -276,13 +276,14 @@ def callback_filename_change(_):
 def text_overlay_drawer(self, context):
     global text_scroll_offset
     font_id = 0
+    blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
     # currently scroll is only responsive if song is playing
     blf.size(font_id, 54.0)
-    blf.position(font_id, 100, 1000 + text_scroll_offset, 0)
+    blf.position(font_id, 100, 75 + text_scroll_offset, 0)
     blf.draw(font_id, 'Test Header')
 
     blf.size(font_id, 42.0)
-    blf.position(font_id, 100, 925 + text_scroll_offset, 0)
+    blf.position(font_id, 100, 0 + text_scroll_offset, 0)
     blf.draw(font_id, 'hello.world')
 
 
