@@ -87,7 +87,7 @@ def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
     Fits frame range of active scene to exactly encapsulate all strips in the Sequence Editor.
     """
 
-    def get_sort_tuple(strip: bpy.types.Sequence) -> Tuple[int, int]:
+    def get_sort_tuple(strip) -> Tuple[int, int]:
         return (strip.frame_final_start, strip.frame_final_duration)
     
     scene = context.scene
