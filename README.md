@@ -48,4 +48,4 @@ To package into a zip for distributing:
 
 # Credit
 
-Songs included in this application are available under a creative commons license, no changes were made to any songs. Links for each song including artist and license are available in `bl_music_player/addons/music_player/music/credit` and are also distributed in the packaged .zip version of the app.
+Songs included in this application are available under a creative commons license, no changes were made to any songs. Links for each song including artist and license are available in `./src/music_player/music/credit` and are also distributed in the packaged .zip version of the app.
