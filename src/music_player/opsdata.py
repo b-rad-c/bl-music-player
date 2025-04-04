@@ -143,6 +143,6 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
     # bpy.ops.wm.save_as_mainfile(filepath='movie.blend')
 
-    bpy.context.scene.render.filepath = 'movie.mp4' 
+    # bpy.context.scene.render.filepath = 'movie.mp4' 
     # bpy.context.scene.render.image_settings.file_format = 'PNG'
     

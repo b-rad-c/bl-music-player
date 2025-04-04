@@ -1,9 +1,12 @@
 # Blender App Template Sample - Music Player
 
-An example Blender App Template music player with sound activated blender music visualizer.
+An music visualizer made with blender. It has a simple gui music player (blender app template) that allows you to select and play music files from your computer. It will bake the audio samples to drive a geo nodes animation synced to the music.
 
-Tested on Blender 3.6 with Python 3.10, this is very much a proof of concept app, it has bugs and limited functionality, but is an awesome demonstration of Blender App Templates!
+It also has a cli (blender as a python module) to render a video file of the animation with a given audio file.
 
+Current version is tested with blender 4.4 and python 3.11.
+
+This is a proof of concept app, it has limited functionality and may not work as expected. But it is a demo of blender app templates and well as blender as a python module. It shows how you can reuse code between two blender apps.
 
 # usage
 To setup a local dev environment from source:
@@ -11,18 +14,25 @@ To setup a local dev environment from source:
 ```bash
 git clone https://github.com/b-rad-c/bl-music-player.git
 cd bl-music-player
-python3 -m venv .venv
+python3 -m venv .venv   # use python version compatible with your blender's python
 source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 python -m blenv setup
 ```
 
-After setup, to run the gui app:
+`blenv` is a blender env manager similar to `venv` for blender projects. It's another of my projects, see https://github.com/medium-tech/bl-env for more info.
+
+To run the app template (gui):
 
 ```bash
 python -m blenv blender
 ```
 
+Render visualizer video for an audio file:
+
+```bash
+./src/cli.py --audio my_audio_file.wav --output my_visualizer.mp4
+```
 
 # Credit
 
