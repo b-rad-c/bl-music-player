@@ -1,12 +1,12 @@
 # Blender App Template Sample - Music Player
 
-An music visualizer made with blender. It has a simple gui music player (blender app template) that allows you to select and play music files from your computer. It will bake the audio samples to drive a geo nodes animation synced to the music.
+A music visualizer made with blender. It has a gui music player (blender app template) that allows you to select and play music files from your computer. It will bake the audio samples to drive a geo nodes animation synced to the music.
 
 It also has a cli (blender as a python module) to render a video file of the animation with a given audio file.
 
 Current version is tested with blender 4.4 and python 3.11.
 
-This is a proof of concept app, it has limited functionality and may not work as expected. But it is a demo of blender app templates and well as blender as a python module. It shows how you can reuse code between two blender apps.
+This is a proof of concept app, it has limited functionality and may not fully work as expected. But it is a demo of blender app templates and well as blender as a python module. It shows how you can reuse code between two blender apps.
 
 # usage
 To setup a local dev environment from source:

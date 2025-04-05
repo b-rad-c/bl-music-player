@@ -5,6 +5,7 @@ import os
 import time
 import argparse
 import multiprocessing
+import subprocess
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -39,6 +40,8 @@ def stdout_redirected(to=os.devnull):
 src_dir = Path(__file__).parent
 blend_file = src_dir / 'bl_music_player_app/startup.blend'
 default_audio_file = src_dir / 'music_player' / 'music' / 'Ketsa - You Best Boogie.mp3'
+tmp_frame_dir = Path(__file__).parent.parent / 'out'
+
 
 def render_thread(threads:int, thread_num:int, audio:Path, output:Path):
     import bpy
@@ -47,8 +50,7 @@ def render_thread(threads:int, thread_num:int, audio:Path, output:Path):
     bpy.ops.wm.open_mainfile(filepath=str(blend_file))
     load_and_bake_audio(bpy.context, sound_path=str(audio.absolute()), background=True)
 
-    output = output.with_suffix(f'.{thread_num}.mp4')
-    bpy.context.scene.render.filepath = str(output.absolute())
+    bpy.context.scene.render.filepath = str(tmp_frame_dir / 'frame-')
 
     print('rendering: ', bpy.context.scene.render.filepath)
 
@@ -62,19 +64,22 @@ def main(threads:int, audio:Path, output:Path):
 
     process_args = [(threads, i, audio, output) for i in range(1, threads + 1)]
 
-    with multiprocessing.Pool(processes=threads) as pool:
-        start = time.time()
+    start = time.time()
 
-        result = pool.starmap_async(render_thread, process_args)
+    with multiprocessing.Pool(processes=threads) as pool:
+
+        pool_result = pool.starmap_async(render_thread, process_args)
         pool.close()
         pool.join()
 
-        end = time.time()
+    print('multiprocessing result', pool_result.successful())
+    print(pool_result.get())
 
-    print(type(result), result)
-
-    print(result.successful())
-    print(result.get())
+    ff_args = ['ffmpeg', '-i', tmp_frame_dir / 'frame-%04d.png', '-i', audio, '-map', '0:v', '-map', '1:a', output.absolute()]
+    print(ff_args)
+    ff_result = subprocess.run(ff_args, check=True)
+    end = time.time()
+    print('ffmpeg result', ff_result.returncode, ff_result)
 
     total_seconds = end - start
     print('render time:', round(total_seconds / 60, 2), 'mins')
