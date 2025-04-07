@@ -42,6 +42,6 @@ Render visualizer video for an audio file:
 
 # Credit
 
-Songs included in this application are available under a creative commons license, no changes were made to any songs. Links for each song including artist and license are available in `./src/music_player/music/credit` and are also distributed in the packaged .zip version of the app.
+Songs included in this application are available under a creative commons license, no changes were made to any songs. Links for each song including artist and license are available in `./src/bl_music_player_app/addons/music_player/music/credit` and are also distributed in the packaged .zip version of the app.
 
 I made the visualizer following this tutorial: https://www.youtube.com/watch?v=rSrjDgWWlWs
