@@ -114,3 +114,4 @@ tests/local*
 .DS_Store
 
 .blenv/*
+out/*
