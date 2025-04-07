@@ -9,6 +9,12 @@ Current version is tested with blender 4.4 and python 3.11.
 This is a proof of concept app, it has limited functionality and may not fully work as expected. But it is a demo of blender app templates and well as blender as a python module. It shows how you can reuse code between two blender apps.
 
 # usage
+* download zip file from `dist` directory
+* click the blender logo in the topbar then "Install Application Template"
+* select zip file
+* File > New > Bl Music Player App
+
+# development
 To setup a local dev environment from source:
 
 ```bash
@@ -31,7 +37,7 @@ python -m blenv blender
 Render visualizer video for an audio file:
 
 ```bash
-./src/cli.py --audio my_audio_file.wav --output my_visualizer.mp4
+./src/cli.py --audio sample.wav --output out/sample.mp4
 ```
 
 # Credit

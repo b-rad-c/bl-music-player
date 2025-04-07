@@ -41,12 +41,15 @@ def stdout_redirected(to=os.devnull):
 
 src_dir = Path(__file__).parent
 blend_file = src_dir / 'bl_music_player_app/startup.blend'
-default_audio_file = src_dir / 'music_player' / 'music' / 'Ketsa - You Best Boogie.mp3'
+addons_dir = src_dir / 'bl_music_player_app/addons'
+default_audio_file = addons_dir / 'music_player/music/Ketsa - You Best Boogie.mp3'
 
 
 def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path):
     with stdout_redirected():
         import bpy
+        import sys
+        sys.path.append(str(addons_dir))
         from music_player.opsdata import load_and_bake_audio
 
         bpy.ops.wm.open_mainfile(filepath=str(blend_file))
