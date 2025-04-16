@@ -83,7 +83,7 @@ def main(threads:int, audio:Path, output:Path):
                 pool.join()
 
                 if not pool_result.successful():
-                    raise RuntimeError('Render failed')
+                    pool_result.get()
 
         frame_end = time.time()
 
