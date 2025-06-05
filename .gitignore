@@ -112,3 +112,6 @@ tests/local*
 # blender app templates
 *.blend1
 .DS_Store
+
+.blenv/*
+out/*

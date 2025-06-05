@@ -18,13 +18,9 @@
 
 # <pep8-80 compliant>
 import os
-import sys
-from pathlib import Path
-from typing import List
 
 import blf
 import bpy
-
 from bl_app_override.helpers import AppOverrideState
 
 

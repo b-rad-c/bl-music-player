@@ -1,51 +1,47 @@
 # Blender App Template Sample - Music Player
 
-An example Blender App Template music player with sound activated blender music visualizer.
+A music visualizer made with blender. It has a gui music player (blender app template) that allows you to select and play music files from your computer. It will bake the audio samples to drive a geo nodes animation synced to the music.
 
-Tested on Blender 3.6 with Python 3.10, this is very much a proof of concept app, it has bugs and limited functionality, but is an awesome demonstration of Blender App Templates!
+It also has a cli (blender as a python module) to render a video file of the animation with a given audio file.
 
-# Use template 
-You can use the app without downloading this repo and setting up a development environment.
+Current version is tested with blender 4.4 and python 3.11.
 
-Download zip file in `./dist` folder and install and run like a normal blender app template.
+This is a proof of concept app, it has limited functionality and may not fully work as expected. But it is a demo of blender app templates and well as blender as a python module. It shows how you can reuse code between two blender apps.
 
-Run the application and single click on a song in the list, press the F key to toggle full screen.
+# usage
+* download zip file from `dist` directory
+* click the blender logo in the topbar then "Install Application Template"
+* select zip file
+* File > New > Bl Music Player App
 
-# Dev usage
-To setup a local dev environment and run from source:
+# development
+To setup a local dev environment from source:
 
 ```bash
 git clone https://github.com/b-rad-c/bl-music-player.git
 cd bl-music-player
-python3 -m venv venv
-source venv/bin/activate
+python3 -m venv .venv   # use python version compatible with your blender's python
+source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
+python -m blenv setup
 ```
 
-An included shell script helps with setting up and running the code.
+`blenv` is a blender env manager similar to `venv` for blender projects. It's another of my projects, see https://github.com/medium-tech/bl-env for more info.
 
-*Note that you may need to update variables in this script because this example app is setup for OSX with Blender3.6 and a python3.10 local venv*
+To run the app template (gui):
 
 ```bash
-# this links the code to your blender install's app template folder
-./dev.sh link
-
-# run the app template
-./dev.sh start
+python -m blenv blender
 ```
 
-You will need to quit and re-run the start command to load code changes.
+Render visualizer video for an audio file:
 
-To unlink the code from your blender install:
 ```bash
-./dev.sh unlink
-```
-
-To package into a zip for distributing:
-```bash
-./dev.sh package
+./src/cli.py --audio sample.wav --output out/sample.mp4
 ```
 
 # Credit
 
-Songs included in this application are available under a creative commons license, no changes were made to any songs. Links for each song including artist and license are available in `bl_music_player/addons/music_player/music/credit` and are also distributed in the packaged .zip version of the app.
+Songs included in this application are available under a creative commons license, no changes were made to any songs. Links for each song including artist and license are available in `./src/bl_music_player_app/addons/music_player/music/credit` and are also distributed in the packaged .zip version of the app.
+
+I made the visualizer following this tutorial: https://www.youtube.com/watch?v=rSrjDgWWlWs

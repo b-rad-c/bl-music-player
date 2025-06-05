@@ -67,7 +67,6 @@ def set_filebrowser_directory(path: Path) -> bpy.types.FileSelectParams:
     area = find_area(bpy.context, 'FILE_BROWSER')
     params = area.spaces.active.params
     params.directory = bytes(path.as_posix(), 'utf-8')
-    # print(f'set directory to: {path.as_posix()}')
     return params
 
 
@@ -106,3 +105,43 @@ def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
     scene.frame_end = strips[-1].frame_final_end - 1
 
     return (scene.frame_start, scene.frame_end)
+
+# 
+
+def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
+
+    print(f'music_player.play({sound_path})')
+
+    # reset sequence
+    bpy.ops.screen.animation_cancel()
+    bpy.context.scene.frame_set(1)
+    del_all_sequences(context)
+    # add audio to sequence
+    seq_area = find_area(bpy.context, 'SEQUENCE_EDITOR')
+    seq_context = get_context_for_area(seq_area)
+    with context.temp_override(**seq_context):
+        bpy.ops.sequencer.sound_strip_add(
+            filepath=sound_path,
+            frame_start=1,
+            channel=1
+        )
+
+    fit_frame_range_to_strips(context)  # seq_context does not have .scene as an attribute?
+
+    if not background:
+        with context.temp_override(**seq_context):
+            bpy.ops.sequencer.view_all()
+
+    print('\tbaking...')
+    graph_area = find_area(bpy.context, 'GRAPH_EDITOR')
+    graph_context = get_context_for_area(graph_area)
+    with context.temp_override(**graph_context):
+        bpy.ops.graph.sound_to_samples(filepath=sound_path)
+
+    # write file
+
+    # bpy.ops.wm.save_as_mainfile(filepath='movie.blend')
+
+    # bpy.context.scene.render.filepath = 'movie.mp4' 
+    # bpy.context.scene.render.image_settings.file_format = 'PNG'
+    
