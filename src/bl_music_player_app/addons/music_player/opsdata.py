@@ -41,6 +41,7 @@ def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.
         screen = context.screen
 
     for area in screen.areas:
+        # print(f'find_area: checking area {area.type} for {area_name}')
         if area.type == area_name:
             return area
     return None

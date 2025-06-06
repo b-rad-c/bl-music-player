@@ -48,10 +48,14 @@ is_reverting_fullscreen = False
 active_file = None
 
 visualizers = [
-    'arctic wave',
-    'broken radio',
-    'combo wave',
+    {'id': 'arctic_wave', 'label': 'Arctic Wave'},
+    {'id': 'broken_radio', 'label': 'Broken Radio'},
+    {'id': 'combo_wave', 'label': 'Combo Wave'}
 ]
+
+bpy.types.Scene.active_visualizer = bpy.props.StringProperty(name='active_visualizer', 
+                                                             default=visualizers[0]['id'],
+                                                             description='The currently active visualizer')
 
 #
 # visualizer ops
@@ -65,20 +69,35 @@ class MP_OP_randomize_visualizer(bpy.types.Operator):
 
     def execute(self, context) -> Set[str]:
         global visualizers
-        bpy.ops.music_player.stop()
-        bpy.context.window.scene = bpy.data.scenes[random.choice(visualizers)]
+
+        while True:
+            visualizer = random.choice(visualizers)
+            if visualizer['id'] != context.scene.active_visualizer:
+                break
+        
+        try:
+            getattr(bpy.ops.music_player, f'set_{visualizer["id"]}')()
+        except AttributeError as e:
+            print(f'Error randomizing visualizer | AttributeError: {e}')
+            return {'CANCELLED'}
 
         return {'FINISHED'}
     
 class MP_OP_set_arctic_wave(bpy.types.Operator):
 
-    bl_idname = 'music_player.set_arctive_wave'
+    bl_idname = 'music_player.set_arctic_wave'
     bl_label = 'Set Arctic Wave visualizer'
     bl_description = 'Changes the visualizer to Arctic Wave'
 
     def execute(self, context) -> Set[str]:
-        bpy.ops.music_player.stop()
-        bpy.context.window.scene = bpy.data.scenes['arctic wave']
+        context.scene.active_visualizer = 'arctic_wave'
+
+        context.scene.objects['wave 1.003'].hide_viewport = False
+        context.scene.objects['wave 1.003'].hide_render = False
+
+        context.scene.objects['wave 2.003'].hide_viewport = True
+        context.scene.objects['wave 2.003'].hide_render = True
+
         return {'FINISHED'}
     
 class MP_OP_set_broken_radio(bpy.types.Operator):
@@ -87,8 +106,14 @@ class MP_OP_set_broken_radio(bpy.types.Operator):
     bl_description = 'Changes the visualizer to Broken Radio'
 
     def execute(self, context) -> Set[str]:
-        bpy.ops.music_player.stop()
-        bpy.context.window.scene = bpy.data.scenes['broken radio']
+        context.scene.active_visualizer = 'broken_radio'
+
+        context.scene.objects['wave 1.003'].hide_viewport = True
+        context.scene.objects['wave 1.003'].hide_render = True
+
+        context.scene.objects['wave 2.003'].hide_viewport = False
+        context.scene.objects['wave 2.003'].hide_render = False
+
         return {'FINISHED'}
     
 class MP_OP_set_combo_wave(bpy.types.Operator):
@@ -97,8 +122,14 @@ class MP_OP_set_combo_wave(bpy.types.Operator):
     bl_description = 'Changes the visualizer to Combo Wave'
 
     def execute(self, context) -> Set[str]:
-        bpy.ops.music_player.stop()
-        bpy.context.window.scene = bpy.data.scenes['combo wave']
+        context.scene.active_visualizer = 'combo_wave'
+
+        context.scene.objects['wave 1.003'].hide_viewport = False
+        context.scene.objects['wave 1.003'].hide_render = False
+
+        context.scene.objects['wave 2.003'].hide_viewport = False
+        context.scene.objects['wave 2.003'].hide_render = False
+
         return {'FINISHED'}
     
 
@@ -144,9 +175,8 @@ class MV_OT_fullscreen(bpy.types.Operator):
 
         print(f'music_player.fullscreen {is_fullscreen=} {is_reverting_fullscreen=}')
 
-        view_3d_area = opsdata.find_area(bpy.context, 'VIEW_3D')
-        view_3d_context = bpy.context.copy()
-        view_3d_context['area'] = view_3d_area
+        view_3d_area = opsdata.find_area(context, 'VIEW_3D')
+        view_3d_context = opsdata.get_context_for_area(view_3d_area)
 
         with context.temp_override(**view_3d_context):
             if is_reverting_fullscreen:
@@ -154,6 +184,7 @@ class MV_OT_fullscreen(bpy.types.Operator):
                 # use this global to ensure only the first instance runs to prevent race conditions
                 print('music_player.fullscreen_test - cancel')
                 return {'CANCELLED'}
+            
             elif is_fullscreen:
                 is_reverting_fullscreen = True
                 print('music_player.fullscreen_test - revert')
@@ -161,6 +192,7 @@ class MV_OT_fullscreen(bpy.types.Operator):
                 bpy.ops.screen.back_to_previous()
                 bpy.ops.wm.window_fullscreen_toggle()
                 is_reverting_fullscreen = False
+
             else:
                 print('music_player.fullscreen_test - enable')
                 bpy.ops.screen.header_toggle_menus()
