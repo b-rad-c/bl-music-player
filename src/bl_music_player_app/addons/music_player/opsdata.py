@@ -114,6 +114,10 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
     # reset sequence
     bpy.ops.screen.animation_cancel()
+
+    # if scene is not None:
+    #     bpy.context.window.scene = bpy.data.scenes[scene]
+
     bpy.context.scene.frame_set(1)
     del_all_sequences(context)
     # add audio to sequence
@@ -131,17 +135,11 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
     if not background:
         with context.temp_override(**seq_context):
             bpy.ops.sequencer.view_all()
-
-    print('\tbaking...')
+    
     graph_area = find_area(bpy.context, 'GRAPH_EDITOR')
     graph_context = get_context_for_area(graph_area)
+
     with context.temp_override(**graph_context):
+
+        print('\tbaking...')
         bpy.ops.graph.sound_to_samples(filepath=sound_path)
-
-    # write file
-
-    # bpy.ops.wm.save_as_mainfile(filepath='movie.blend')
-
-    # bpy.context.scene.render.filepath = 'movie.mp4' 
-    # bpy.context.scene.render.image_settings.file_format = 'PNG'
-    

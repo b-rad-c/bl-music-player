@@ -18,9 +18,9 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
+import random
 from pathlib import Path
 from typing import Optional, List, Callable, Set
-from random import randint
 
 import bpy
 
@@ -47,26 +47,15 @@ is_reverting_fullscreen = False
 
 active_file = None
 
+visualizers = [
+    'arctic wave',
+    'broken radio',
+    'combo wave',
+]
+
 #
-# operators
+# visualizer ops
 #
-
-
-@persistent
-def randomize_vis():
-    print('\trandomize_vis()')
-
-    waveform = bpy.context.active_object
-    waveform['color_preset'] = randint(0, 3)
-
-    nodes = waveform.modifiers['GeometryNodes']
-    nodes['Input_2'] = bool(randint(0, 1))
-    nodes['Input_3'] = bool(randint(0, 1))
-
-    # bpy.context.scene.update_render_engine()
-    # bpy.context.scene.update_tag()
-    bpy.context.view_layer.update()
-
 
 class MP_OP_randomize_visualizer(bpy.types.Operator):
 
@@ -75,18 +64,47 @@ class MP_OP_randomize_visualizer(bpy.types.Operator):
     bl_description = 'Sets random values for the visualizer parameters'
 
     def execute(self, context) -> Set[str]:
-        waveform = context.active_object
-        waveform['color_preset'] = randint(0, 3)
+        global visualizers
+        bpy.ops.music_player.stop()
+        bpy.context.window.scene = bpy.data.scenes[random.choice(visualizers)]
 
-        nodes = waveform.modifiers['GeometryNodes']
-        nodes['Input_2'] = bool(randint(0, 1))
-        nodes['Input_3'] = bool(randint(0, 1))
-
-        # bpy.context.scene.update_render_engine()
-        # bpy.context.scene.update_tag()
-        context.view_layer.update()
         return {'FINISHED'}
+    
+class MP_OP_set_arctic_wave(bpy.types.Operator):
 
+    bl_idname = 'music_player.set_arctive_wave'
+    bl_label = 'Set Arctic Wave visualizer'
+    bl_description = 'Changes the visualizer to Arctic Wave'
+
+    def execute(self, context) -> Set[str]:
+        bpy.ops.music_player.stop()
+        bpy.context.window.scene = bpy.data.scenes['arctic wave']
+        return {'FINISHED'}
+    
+class MP_OP_set_broken_radio(bpy.types.Operator):
+    bl_idname = 'music_player.set_broken_radio'
+    bl_label = 'Set Broken Radio visualizer'
+    bl_description = 'Changes the visualizer to Broken Radio'
+
+    def execute(self, context) -> Set[str]:
+        bpy.ops.music_player.stop()
+        bpy.context.window.scene = bpy.data.scenes['broken radio']
+        return {'FINISHED'}
+    
+class MP_OP_set_combo_wave(bpy.types.Operator):
+    bl_idname = 'music_player.set_combo_wave'
+    bl_label = 'Set Combo Wave visualizer'
+    bl_description = 'Changes the visualizer to Combo Wave'
+
+    def execute(self, context) -> Set[str]:
+        bpy.ops.music_player.stop()
+        bpy.context.window.scene = bpy.data.scenes['combo wave']
+        return {'FINISHED'}
+    
+
+#
+# playback ops
+#
 
 class MP_OP_play(bpy.types.Operator):
 
@@ -212,7 +230,15 @@ def callback_filename_change(_):
 # register
 #
 
-classes = [MP_OP_randomize_visualizer, MP_OP_play, MP_OP_stop, MV_OT_fullscreen]
+classes = [
+    MP_OP_randomize_visualizer, 
+    MP_OP_set_arctic_wave,
+    MP_OP_set_broken_radio,
+    MP_OP_set_combo_wave,
+    MP_OP_play, 
+    MP_OP_stop, 
+    MV_OT_fullscreen
+]
 load_post_handlers = [init_3d_viewport, init_filebrowser]
 draw_handlers_fb: List[Callable] = []
 
