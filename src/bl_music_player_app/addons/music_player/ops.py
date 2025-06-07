@@ -53,8 +53,10 @@ visualizers = [
     {'id': 'combo_wave', 'label': 'Combo Wave'}
 ]
 
+default_visualizer = visualizers[0]['id']
+
 bpy.types.Scene.active_visualizer = bpy.props.StringProperty(name='active_visualizer', 
-                                                             default=visualizers[0]['id'],
+                                                             default=default_visualizer,
                                                              description='The currently active visualizer')
 
 #
@@ -164,7 +166,7 @@ class MP_OP_stop(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MV_OT_fullscreen(bpy.types.Operator):
+class MP_OT_fullscreen(bpy.types.Operator):
     bl_idname = 'music_player.fullscreen'
     bl_label = 'Fullscreen + Fill Area'
     bl_description = 'fullscreen'
@@ -284,7 +286,7 @@ classes = [
     MP_OP_set_combo_wave,
     MP_OP_play, 
     MP_OP_stop, 
-    MV_OT_fullscreen
+    MP_OT_fullscreen
 ]
 load_post_handlers = [init_3d_viewport, init_filebrowser, init_visualizer]
 draw_handlers_fb: List[Callable] = []
