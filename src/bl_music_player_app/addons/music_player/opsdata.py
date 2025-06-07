@@ -21,8 +21,6 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 import bpy
-from glob import glob
-from music_player.config import VISUALIZER_DIRECTORY
 
 
 def is_audio(filepath: Path) -> bool:
@@ -107,7 +105,6 @@ def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
 
     return (scene.frame_start, scene.frame_end)
 
-# 
 
 def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 

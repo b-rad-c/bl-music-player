@@ -92,11 +92,11 @@ class MP_OP_set_arctic_wave(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'arctic_wave'
 
-        context.scene.objects['wave 1.003'].hide_viewport = False
-        context.scene.objects['wave 1.003'].hide_render = False
+        context.scene.objects['wave 1'].hide_viewport = False
+        context.scene.objects['wave 1'].hide_render = False
 
-        context.scene.objects['wave 2.003'].hide_viewport = True
-        context.scene.objects['wave 2.003'].hide_render = True
+        context.scene.objects['wave 2'].hide_viewport = True
+        context.scene.objects['wave 2'].hide_render = True
 
         return {'FINISHED'}
     
@@ -108,11 +108,11 @@ class MP_OP_set_broken_radio(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'broken_radio'
 
-        context.scene.objects['wave 1.003'].hide_viewport = True
-        context.scene.objects['wave 1.003'].hide_render = True
+        context.scene.objects['wave 1'].hide_viewport = True
+        context.scene.objects['wave 1'].hide_render = True
 
-        context.scene.objects['wave 2.003'].hide_viewport = False
-        context.scene.objects['wave 2.003'].hide_render = False
+        context.scene.objects['wave 2'].hide_viewport = False
+        context.scene.objects['wave 2'].hide_render = False
 
         return {'FINISHED'}
     
@@ -124,11 +124,11 @@ class MP_OP_set_combo_wave(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'combo_wave'
 
-        context.scene.objects['wave 1.003'].hide_viewport = False
-        context.scene.objects['wave 1.003'].hide_render = False
+        context.scene.objects['wave 1'].hide_viewport = False
+        context.scene.objects['wave 1'].hide_render = False
 
-        context.scene.objects['wave 2.003'].hide_viewport = False
-        context.scene.objects['wave 2.003'].hide_render = False
+        context.scene.objects['wave 2'].hide_viewport = False
+        context.scene.objects['wave 2'].hide_render = False
 
         return {'FINISHED'}
     
@@ -220,6 +220,21 @@ def init_3d_viewport(_):
     print('\t-> done')
 
 @persistent
+def init_visualizer(_):
+
+    visualizer = bpy.context.scene.active_visualizer
+
+    print('init_visualizer() - ', visualizer)
+
+    try:
+        getattr(bpy.ops.music_player, f'set_{visualizer}')()
+    except AttributeError as e:
+        print(f'Error initializing visualizer | AttributeError: {e}')
+        return {'CANCELLED'}
+
+    print('\t-> done')
+
+@persistent
 def init_filebrowser(_):
     print('init_filebrowser()')
     params = opsdata.set_filebrowser_directory(config.MUSIC_DIRECTORY)
@@ -271,7 +286,7 @@ classes = [
     MP_OP_stop, 
     MV_OT_fullscreen
 ]
-load_post_handlers = [init_3d_viewport, init_filebrowser]
+load_post_handlers = [init_3d_viewport, init_filebrowser, init_visualizer]
 draw_handlers_fb: List[Callable] = []
 
 
