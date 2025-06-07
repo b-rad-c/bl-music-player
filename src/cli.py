@@ -50,7 +50,7 @@ def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path):
         import bpy
         import sys
         sys.path.append(str(addons_dir))
-        from music_player.opsdata import load_and_bake_audio
+        from music_player.util import load_and_bake_audio
 
         bpy.ops.wm.open_mainfile(filepath=str(blend_file))
         load_and_bake_audio(bpy.context, sound_path=str(audio.absolute()), background=True)

@@ -25,7 +25,7 @@ from typing import Optional, List, Callable, Set
 import bpy
 
 from bpy.app.handlers import persistent
-from music_player import opsdata, config
+from music_player import util, config
 
 
 
@@ -146,7 +146,7 @@ class MP_OP_play(bpy.types.Operator):
     sound_path: bpy.props.StringProperty(name='Sound path', description='The path to a sound file to play')
 
     def execute(self, context) -> Set[str]:
-        opsdata.load_and_bake_audio(context, sound_path=self.sound_path)
+        util.load_and_bake_audio(context, sound_path=self.sound_path)
 
         bpy.ops.screen.animation_play(sync=True)
 
@@ -175,8 +175,8 @@ class MV_OT_fullscreen(bpy.types.Operator):
 
         print(f'music_player.fullscreen {is_fullscreen=} {is_reverting_fullscreen=}')
 
-        view_3d_area = opsdata.find_area(context, 'VIEW_3D')
-        view_3d_context = opsdata.get_context_for_area(view_3d_area)
+        view_3d_area = util.find_area(context, 'VIEW_3D')
+        view_3d_context = util.get_context_for_area(view_3d_area)
 
         with context.temp_override(**view_3d_context):
             if is_reverting_fullscreen:
@@ -237,7 +237,7 @@ def init_visualizer(_):
 @persistent
 def init_filebrowser(_):
     print('init_filebrowser()')
-    params = opsdata.set_filebrowser_directory(config.MUSIC_DIRECTORY)
+    params = util.set_filebrowser_directory(config.MUSIC_DIRECTORY)
     params.display_type = 'LIST_VERTICAL'
     print('\t-> done')
 
@@ -263,7 +263,7 @@ def callback_filename_change(_):
         if active_filename != previous_filename:
             audio_path = active_directory / active_filename
 
-            if opsdata.is_audio(audio_path):
+            if util.is_audio(audio_path):
                 if play_audio:
                     bpy.ops.music_player.stop()
                     bpy.ops.music_player.play(sound_path=audio_path.as_posix())
