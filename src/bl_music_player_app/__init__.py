@@ -16,7 +16,6 @@
 #
 # ##### END GPL LICENSE BLOCK #####
 
-# <pep8-80 compliant>
 import os
 import bpy
 from bl_app_override.helpers import AppOverrideState

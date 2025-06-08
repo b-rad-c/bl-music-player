@@ -45,15 +45,17 @@ addons_dir = src_dir / 'bl_music_player_app/addons'
 default_audio_file = addons_dir / 'music_player/music/Ketsa - You Best Boogie.mp3'
 
 
-def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path, visualizer:str):
+def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path, visualizer:str|None):
     with stdout_redirected():
         sys.path.append(str(addons_dir))
         import bpy
+        from bl_music_player_app import register
+        register()
         from music_player.util import load_and_bake_audio
 
         bpy.ops.wm.open_mainfile(filepath=str(blend_file))
 
-        if True:
+        if visualizer is not None:
             bpy.context.scene.active_visualizer = visualizer
             from music_player.ops import init_visualizer
             init_visualizer(bpy.context)
@@ -71,7 +73,7 @@ def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path, v
         bpy.ops.render.render(animation=True)
 
 
-def main(threads:int, audio:Path, output:Path, visualizer:str):
+def main(threads:int, audio:Path, output:Path, visualizer:str|None):
 
     with TemporaryDirectory() as tmp_frame_dir:
         tmp_frame_dir_path = Path(tmp_frame_dir)
@@ -108,6 +110,8 @@ def main(threads:int, audio:Path, output:Path, visualizer:str):
 
 
 def list_visualizers():
+    sys.path.append(str(addons_dir))
+    from music_player.ops import visualizers, default_visualizer
     print('Available visualizers:')
     for visualizer in visualizers:
         is_default = ' (default)' if visualizer['id'] == default_visualizer else ''
@@ -117,18 +121,14 @@ def list_visualizers():
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
-    sys.path.append(str(addons_dir))
-    #import bpy
-    from music_player.ops import visualizers, default_visualizer
-
     # cli #
 
-    parser = argparse.ArgumentParser(description='Render a musical animation.')
+    parser = argparse.ArgumentParser(description='Render a music visualizer as mov file')
     parser.add_argument('--audio', '-a', type=Path, help='Path to the audio file', default=str(default_audio_file))
-    parser.add_argument('--output', '-o', type=Path, help='Path to the output file', default='output.mp4')
+    parser.add_argument('--output', '-o', type=Path, help='Path to the output file', default='output.mov')
     parser.add_argument('--threads', '-t', type=int, help='Number of threads to use (default=8)', default=8)
     parser.add_argument('--list-visualizers', '-l', action='store_true', help='List available visualizers and exit')
-    parser.add_argument('--visualizer', '-v', type=str, help=f'Select a visualizer (default: {default_visualizer})', default=default_visualizer)
+    parser.add_argument('--visualizer', '-v', type=str, help=f'Specify the visualizer to use', default=None)
 
     args = parser.parse_args()
     
@@ -138,8 +138,5 @@ if __name__ == '__main__':
     else:
         if not os.path.exists(args.audio):
             raise FileNotFoundError(f'Audio file not found: {args.audio}')
-
-        if args.output.suffix != '.mp4':
-            raise ValueError('Output file must be an .mp4 file')
         
         main(args.threads, args.audio, args.output, args.visualizer)

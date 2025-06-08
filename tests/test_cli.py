@@ -13,7 +13,7 @@ class TestAuth(unittest.TestCase):
     
 
     def test_render_via_cli(self):
-        output_path = root_path / 'out/unittest.mp4'
+        output_path = root_path / 'out/unittest.mov'
 
         try:
             output_path.unlink()
