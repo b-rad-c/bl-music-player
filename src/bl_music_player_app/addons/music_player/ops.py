@@ -50,7 +50,8 @@ active_file = None
 visualizers = [
     {'id': 'arctic_wave', 'label': 'Arctic Wave'},
     {'id': 'broken_radio', 'label': 'Broken Radio'},
-    {'id': 'combo_wave', 'label': 'Combo Wave'}
+    {'id': 'combo_wave', 'label': 'Combo Wave'},
+    {'id': 'equalizer', 'label': 'Equalizer'}
 ]
 
 default_visualizer = visualizers[0]['id']
@@ -94,6 +95,14 @@ class MP_OP_set_arctic_wave(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'arctic_wave'
 
+        context.scene.camera = bpy.data.objects['Camera']
+
+        bpy.data.collections['eq'].hide_viewport = True
+        bpy.data.collections['eq'].hide_render = True
+
+        bpy.data.collections['wave'].hide_viewport = False
+        bpy.data.collections['wave'].hide_render = False
+
         context.scene.objects['wave 1'].hide_viewport = False
         context.scene.objects['wave 1'].hide_render = False
 
@@ -109,6 +118,14 @@ class MP_OP_set_broken_radio(bpy.types.Operator):
 
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'broken_radio'
+
+        context.scene.camera = bpy.data.objects['Camera']
+
+        bpy.data.collections['eq'].hide_viewport = True
+        bpy.data.collections['eq'].hide_render = True
+
+        bpy.data.collections['wave'].hide_viewport = False
+        bpy.data.collections['wave'].hide_render = False
 
         context.scene.objects['wave 1'].hide_viewport = True
         context.scene.objects['wave 1'].hide_render = True
@@ -126,11 +143,42 @@ class MP_OP_set_combo_wave(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'combo_wave'
 
+        context.scene.camera = bpy.data.objects['Camera']
+
+        bpy.data.collections['eq'].hide_viewport = True
+        bpy.data.collections['eq'].hide_render = True
+
+        bpy.data.collections['wave'].hide_viewport = False
+        bpy.data.collections['wave'].hide_render = False
+
         context.scene.objects['wave 1'].hide_viewport = False
         context.scene.objects['wave 1'].hide_render = False
 
         context.scene.objects['wave 2'].hide_viewport = False
         context.scene.objects['wave 2'].hide_render = False
+
+        return {'FINISHED'}
+    
+class MP_OP_set_equalizer(bpy.types.Operator):
+
+    bl_idname = 'music_player.set_equalizer'
+    bl_label = 'Set Equalizer visualizer'
+    bl_description = 'Changes the visualizer to Equalizer'
+
+    def execute(self, context) -> Set[str]:
+        context.scene.active_visualizer = 'equalizer'
+
+        # context.scene.camera = bpy.data.objects['eq cam front']
+
+        bpy.data.collections['wave'].hide_viewport = True
+        bpy.data.collections['wave'].hide_render = True
+        
+        bpy.data.collections['eq'].hide_viewport = False
+        bpy.data.collections['eq'].hide_render = False
+
+        bpy.context.view_layer.update()
+
+        print('Setting equalizer visualizer')
 
         return {'FINISHED'}
     
@@ -284,6 +332,7 @@ classes = [
     MP_OP_set_arctic_wave,
     MP_OP_set_broken_radio,
     MP_OP_set_combo_wave,
+    MP_OP_set_equalizer,
     MP_OP_play, 
     MP_OP_stop, 
     MP_OT_fullscreen

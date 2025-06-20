@@ -139,5 +139,22 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
     with context.temp_override(**graph_context):
 
-        print('\tbaking...')
+        print('\tbaking full...')
+        bpy.context.view_layer.objects.active = bpy.data.objects['audio signal - full']
         bpy.ops.graph.sound_to_samples(filepath=sound_path)
+
+        print('\tbaking low...')
+        bpy.context.view_layer.objects.active = bpy.data.objects['audio signal - low']
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=0, high=250)
+
+        print('\tbaking low mid...')
+        bpy.context.view_layer.objects.active =  bpy.data.objects['audio signal - low mid']
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=250, high=400)
+
+        print('\tbaking high mid...')
+        bpy.context.view_layer.objects.active =  bpy.data.objects['audio signal - high mid']
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=400, high=800)
+
+        print('\tbaking high...')
+        bpy.context.view_layer.objects.active =  bpy.data.objects['audio signal - high']
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=800, high=100000)
