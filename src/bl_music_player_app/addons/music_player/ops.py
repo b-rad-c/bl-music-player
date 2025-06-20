@@ -60,6 +60,36 @@ bpy.types.Scene.active_visualizer = bpy.props.StringProperty(name='active_visual
                                                              default=default_visualizer,
                                                              description='The currently active visualizer')
 
+def show_collectons(context: bpy.types.Context, eq: bool = False, wave: bool = True) -> None:
+    """
+    Show or hide the collections based on the visualizer.
+    :param context: The Blender context.
+    :param eq: Whether to show the equalizer collection.
+    :param wave: Whether to show the wave collection.
+    """
+    context.layer_collection.children['eq'].hide_viewport = not eq
+    context.layer_collection.children['eq'].collection.hide_render = not eq
+
+    context.layer_collection.children['wave'].hide_viewport = not wave
+    context.layer_collection.children['wave'].collection.hide_render = not wave
+
+def dump(context, full=False):
+    for attr in dir(context):
+        value = getattr(context, attr)
+
+        try:
+            for key, val in value.children.items():
+                print(f'\t{attr}.{key} >>> {val}')
+        except (TypeError, AttributeError):
+            try:
+                for key, val in value.items():
+                    print(f'\t{attr}.{key} >>> {val}')
+            except (TypeError, AttributeError):
+                if isinstance(value, list):
+                    for item in value:
+                        print(f'\t{attr} >>> {item}')
+                else:
+                    print(f'{attr} = {getattr(context, attr)}')
 #
 # visualizer ops
 #
@@ -95,13 +125,12 @@ class MP_OP_set_arctic_wave(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'arctic_wave'
 
+        show_collectons(context, eq=False, wave=True)
+
         context.scene.camera = bpy.data.objects['Camera']
 
-        bpy.data.collections['eq'].hide_viewport = True
-        bpy.data.collections['eq'].hide_render = True
-
-        bpy.data.collections['wave'].hide_viewport = False
-        bpy.data.collections['wave'].hide_render = False
+        # bpy.data.collections['wave'].hide_viewport = False
+        # bpy.data.collections['wave'].hide_render = False
 
         context.scene.objects['wave 1'].hide_viewport = False
         context.scene.objects['wave 1'].hide_render = False
@@ -119,13 +148,9 @@ class MP_OP_set_broken_radio(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'broken_radio'
 
+        show_collectons(context, eq=False, wave=True)
+
         context.scene.camera = bpy.data.objects['Camera']
-
-        bpy.data.collections['eq'].hide_viewport = True
-        bpy.data.collections['eq'].hide_render = True
-
-        bpy.data.collections['wave'].hide_viewport = False
-        bpy.data.collections['wave'].hide_render = False
 
         context.scene.objects['wave 1'].hide_viewport = True
         context.scene.objects['wave 1'].hide_render = True
@@ -143,13 +168,9 @@ class MP_OP_set_combo_wave(bpy.types.Operator):
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'combo_wave'
 
+        show_collectons(context, eq=False, wave=True)
+
         context.scene.camera = bpy.data.objects['Camera']
-
-        bpy.data.collections['eq'].hide_viewport = True
-        bpy.data.collections['eq'].hide_render = True
-
-        bpy.data.collections['wave'].hide_viewport = False
-        bpy.data.collections['wave'].hide_render = False
 
         context.scene.objects['wave 1'].hide_viewport = False
         context.scene.objects['wave 1'].hide_render = False
@@ -167,18 +188,20 @@ class MP_OP_set_equalizer(bpy.types.Operator):
 
     def execute(self, context) -> Set[str]:
         context.scene.active_visualizer = 'equalizer'
-
-        # context.scene.camera = bpy.data.objects['eq cam front']
-
-        bpy.data.collections['wave'].hide_viewport = True
-        bpy.data.collections['wave'].hide_render = True
         
-        bpy.data.collections['eq'].hide_viewport = False
-        bpy.data.collections['eq'].hide_render = False
+        show_collectons(context, eq=True, wave=False)
+        # eq.hide_viewport = not eq
+        # eq.collection.hide_render = not eq
+
+        # wave = context.layer_collection.children['wave']
+        # wave.hide_viewport = not wave
+        # wave.collection.hide_render = not wave
+
+        context.scene.camera = bpy.data.objects['eq cam front']
 
         bpy.context.view_layer.update()
 
-        print('Setting equalizer visualizer')
+        # print('Setting equalizer visualizer')
 
         return {'FINISHED'}
     
