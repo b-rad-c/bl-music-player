@@ -330,10 +330,14 @@ def callback_filename_change(_):
     active_directory = Path(bpy.path.abspath(params.directory.decode('utf-8')))
     previous_filename = active_filename
 
+    
+    # check if we are in the filebrowser
+
     # check active file
     if bpy.context.active_file and not is_reverting_fullscreen:
         active_filename = bpy.context.active_file.relative_path
         if active_filename != previous_filename:
+            print(f'callback_filename_change() - {active_filename=} {previous_filename=}')
             audio_path = active_directory / active_filename
 
             if util.is_audio(audio_path):
@@ -342,8 +346,10 @@ def callback_filename_change(_):
                     bpy.ops.music_player.play(sound_path=audio_path.as_posix())
 
     else:
-        active_filename = None
-        bpy.ops.music_player.stop()
+        pass
+        #print(f'callback_filename_change() - no active file or reverting fullscreen {active_directory=} {active_filename=} {previous_directory=} {previous_filename=}')
+        # active_filename = None
+        # bpy.ops.music_player.stop()
     
 
 #

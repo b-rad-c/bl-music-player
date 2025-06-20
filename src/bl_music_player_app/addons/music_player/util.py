@@ -138,23 +138,31 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
     graph_context = get_context_for_area(graph_area)
 
     with context.temp_override(**graph_context):
+        bpy.ops.object.select_all(action='DESELECT')
+
+        bpy.data.screens["Default"].areas[3].spaces[0].dopesheet.show_only_selected = True
 
         print('\tbaking full...')
-        bpy.context.view_layer.objects.active = bpy.data.objects['audio signal - full']
+        bpy.data.objects['audio signal - full'].select_set(True)
         bpy.ops.graph.sound_to_samples(filepath=sound_path)
+        bpy.data.objects['audio signal - full'].select_set(False)
 
         print('\tbaking low...')
-        bpy.context.view_layer.objects.active = bpy.data.objects['audio signal - low']
+        bpy.data.objects['audio signal - low'].select_set(True)
         bpy.ops.graph.sound_to_samples(filepath=sound_path, low=0, high=250)
+        bpy.data.objects['audio signal - low'].select_set(False)
 
         print('\tbaking low mid...')
-        bpy.context.view_layer.objects.active =  bpy.data.objects['audio signal - low mid']
+        bpy.data.objects['audio signal - low mid'].select_set(True)
         bpy.ops.graph.sound_to_samples(filepath=sound_path, low=250, high=400)
+        bpy.data.objects['audio signal - low mid'].select_set(False)
 
         print('\tbaking high mid...')
-        bpy.context.view_layer.objects.active =  bpy.data.objects['audio signal - high mid']
+        bpy.data.objects['audio signal - high mid'].select_set(True)
         bpy.ops.graph.sound_to_samples(filepath=sound_path, low=400, high=800)
+        bpy.data.objects['audio signal - high mid'].select_set(False)
 
         print('\tbaking high...')
-        bpy.context.view_layer.objects.active =  bpy.data.objects['audio signal - high']
+        bpy.data.objects['audio signal - high'].select_set(True)
         bpy.ops.graph.sound_to_samples(filepath=sound_path, low=800, high=100000)
+        bpy.data.objects['audio signal - high'].select_set(False)
