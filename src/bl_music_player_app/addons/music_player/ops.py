@@ -79,17 +79,18 @@ def dump(context, full=False):
 
         try:
             for key, val in value.children.items():
-                print(f'\t{attr}.{key} >>> {val}')
+                print(f'{attr}.{key} >>> {val}')
         except (TypeError, AttributeError):
             try:
                 for key, val in value.items():
-                    print(f'\t{attr}.{key} >>> {val}')
+                    print(f'{attr}.{key} >>> {val}')
             except (TypeError, AttributeError):
                 if isinstance(value, list):
                     for item in value:
-                        print(f'\t{attr} >>> {item}')
+                        print(f'{attr} >>> {item}')
                 else:
                     print(f'{attr} = {getattr(context, attr)}')
+
 #
 # visualizer ops
 #
@@ -180,6 +181,9 @@ class MP_OP_set_combo_wave(bpy.types.Operator):
 
         return {'FINISHED'}
     
+
+    
+
 class MP_OP_set_equalizer(bpy.types.Operator):
 
     bl_idname = 'music_player.set_equalizer'
@@ -190,18 +194,29 @@ class MP_OP_set_equalizer(bpy.types.Operator):
         context.scene.active_visualizer = 'equalizer'
         
         show_collectons(context, eq=True, wave=False)
-        # eq.hide_viewport = not eq
-        # eq.collection.hide_render = not eq
 
-        # wave = context.layer_collection.children['wave']
-        # wave.hide_viewport = not wave
-        # wave.collection.hide_render = not wave
+        eq_cam_names = list(filter(lambda c: c.startswith('eq cam'), bpy.data.objects.keys()))
+        eq_cam_names.sort()
+        
+        context.scene.camera = bpy.data.objects[eq_cam_names[0]]
 
-        context.scene.camera = bpy.data.objects['eq cam front']
+        print(f'camera names: {eq_cam_names}')
 
-        bpy.context.view_layer.update()
+        def change_camera():
+            if context.scene.active_visualizer != 'equalizer':
+                # return None to disable the timer
+                print('change_camera() - visualizer changed, disabling timer')
+                return None
+            
+            new_cam = random.choice(eq_cam_names)
+            context.scene.camera = bpy.data.objects[new_cam]
 
-        # print('Setting equalizer visualizer')
+            delay = random.uniform(5, 10)  # random delay between 5 and 15 seconds
+            print(f'change_camera() - changing camera to {new_cam}, next change in {delay:.2f} seconds')
+
+            return delay  # return a random time in seconds to change the camera again
+        
+        bpy.app.timers.register(change_camera, first_interval=10, persistent=True)
 
         return {'FINISHED'}
     
