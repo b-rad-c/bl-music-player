@@ -325,8 +325,28 @@ def init_visualizer(_):
 @persistent
 def init_filebrowser(_):
     print('init_filebrowser()')
-    params = util.set_filebrowser_directory(config.MUSIC_DIRECTORY)
+    #params = util.set_filebrowser_directory()
+
+
+    area = util.find_area(bpy.context, 'FILE_BROWSER')
+    params = area.spaces.active.params
+    params.directory = bytes(config.MUSIC_DIRECTORY.as_posix(), 'utf-8')
     params.display_type = 'LIST_VERTICAL'
+
+    # file_browser_context = util.get_context_for_area(area)
+    # with bpy.context.temp_override(**file_browser_context):
+    #     # dump(bpy.context, full=True)
+    #     fb = bpy.context.space_data
+    #     # fb.params.filename
+    #     #breakpoint()
+    #     bpy.msgbus.subscribe_rna(
+    #         key=fb.params,
+    #         owner=music_player_owner,
+    #         args=(),
+    #         notify=active_file_changed,
+    #         options={'PERSISTENT'}
+    #     )
+    #     print(f'subscribed to active_file changes: {fb}')
     print('\t-> done')
 
 @persistent
@@ -352,7 +372,7 @@ def callback_filename_change(_):
     if bpy.context.active_file and not is_reverting_fullscreen:
         active_filename = bpy.context.active_file.relative_path
         if active_filename != previous_filename:
-            print(f'callback_filename_change() - {active_filename=} {previous_filename=}')
+            # print(f'callback_filename_change() - {active_filename=} {previous_filename=}')
             audio_path = active_directory / active_filename
 
             if util.is_audio(audio_path):
@@ -365,7 +385,11 @@ def callback_filename_change(_):
         #print(f'callback_filename_change() - no active file or reverting fullscreen {active_directory=} {active_filename=} {previous_directory=} {previous_filename=}')
         # active_filename = None
         # bpy.ops.music_player.stop()
-    
+
+# def active_file_changed(*args):
+#     print('active_file_changed() - ', args)
+
+# music_player_owner = object()
 
 #
 # register
@@ -399,6 +423,8 @@ def register():
         )
     )
 
+    
+
 
 def unregister():
 
@@ -411,3 +437,5 @@ def unregister():
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    bpy.msgbus.clear_by_owner(music_player_owner)

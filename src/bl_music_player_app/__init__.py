@@ -42,7 +42,18 @@ class AppStateStore(AppOverrideState):
         bpy.types.TOPBAR_HT_upper_bar.draw_left = draw_left_override
         bpy.types.TOPBAR_HT_upper_bar.draw_right = lambda self, context: None
         bpy.types.TOPBAR_MT_editor_menus.draw = lambda self, context: None
-        
+        bpy.types.SEQUENCER_PT_tools_active.draw = lambda self, context: None
+        bpy.types.SEQUENCER_PT_tools_active.draw_cls = lambda cls, layout, context, detect_layout=True, scale_y=1.75: None
+
+        # for attr in dir(bpy.types):
+        #     if 'SEQ' in attr or 'seq' in attr:
+        #         print(attr)
+
+        # ta = bpy.types.SEQUENCER_PT_tools_active
+        # for name in dir(ta):
+        #     print(name, getattr(ta, name))
+        # breakpoint()
+
         return classes
 
     # ----------------
