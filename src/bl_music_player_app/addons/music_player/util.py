@@ -22,14 +22,9 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 import bpy
 
-
-def is_audio(filepath: Path) -> bool:
-    return filepath.suffix.lower() in [
-        ".wav",
-        ".mp3",
-        ".aac"
-    ]
-
+#
+# area functions
+#
 
 def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.Area]:
     if isinstance(context, dict):
@@ -62,16 +57,18 @@ def get_context_for_area(area: bpy.types.Area, region_type="WINDOW") -> Dict:
     return {}
 
 
+def close_area(area: bpy.types.Area) -> None:
+    bpy.ops.screen.area_close(get_context_for_area(area))
+
+#
+# sequencer functions
+#
+
 def del_all_sequences(context: bpy.types.Context) -> None:
     for seq_name in [s.name for s in context.scene.sequence_editor.sequences_all]:
         context.scene.sequence_editor.sequences.remove(
             context.scene.sequence_editor.sequences[seq_name]
         )
-
-
-def close_area(area: bpy.types.Area) -> None:
-    bpy.ops.screen.area_close(get_context_for_area(area))
-
 
 def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
     """
@@ -97,7 +94,6 @@ def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
     scene.frame_end = strips[-1].frame_final_end - 1
 
     return (scene.frame_start, scene.frame_end)
-
 
 def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 

@@ -33,13 +33,11 @@ from music_player import util, config
 # globals
 #
 
-
 active_directory: Path = ''
 active_filename: Optional[str] = ''
 previous_directory: Path = ''
 previous_filename: Optional[str] = ''
 
-play_audio = True
 screen_index = 1
 random_vis_on_play = True
 is_fullscreen = False
@@ -117,6 +115,7 @@ class MP_OP_randomize_visualizer(bpy.types.Operator):
 
         return {'FINISHED'}
     
+
 class MP_OP_set_arctic_wave(bpy.types.Operator):
 
     bl_idname = 'music_player.set_arctic_wave'
@@ -141,6 +140,7 @@ class MP_OP_set_arctic_wave(bpy.types.Operator):
 
         return {'FINISHED'}
     
+
 class MP_OP_set_broken_radio(bpy.types.Operator):
     bl_idname = 'music_player.set_broken_radio'
     bl_label = 'Set Broken Radio visualizer'
@@ -161,6 +161,7 @@ class MP_OP_set_broken_radio(bpy.types.Operator):
 
         return {'FINISHED'}
     
+
 class MP_OP_set_combo_wave(bpy.types.Operator):
     bl_idname = 'music_player.set_combo_wave'
     bl_label = 'Set Combo Wave visualizer'
@@ -180,8 +181,6 @@ class MP_OP_set_combo_wave(bpy.types.Operator):
         context.scene.objects['wave 2'].hide_render = False
 
         return {'FINISHED'}
-    
-
     
 
 class MP_OP_set_equalizer(bpy.types.Operator):
@@ -350,41 +349,38 @@ def init_filebrowser(_):
     print('\t-> done')
 
 @persistent
-def callback_filename_change(_):
-    # init globals
-    global active_directory
-    global active_filename
-    global previous_directory
-    global previous_filename
-    global play_audio
+def detect_filename_change(_):
+    """this is run each time the filebrowser is redrawn, so we can check if the active file has changed"""
+
     global is_reverting_fullscreen
 
-    # update globals
-    previous_directory = active_directory
-    params = bpy.context.area.spaces.active.params
-    active_directory = Path(bpy.path.abspath(params.directory.decode('utf-8')))
-    previous_filename = active_filename
-
-    
-    # check if we are in the filebrowser
-
-    # check active file
+    # if we are in filebrowser
     if bpy.context.active_file and not is_reverting_fullscreen:
-        active_filename = bpy.context.active_file.relative_path
-        if active_filename != previous_filename:
-            # print(f'callback_filename_change() - {active_filename=} {previous_filename=}')
+        global previous_filename
+
+        # if filename has changed update state and play audio
+        if previous_filename != bpy.context.active_file.relative_path:
+            global active_filename
+            global active_directory
+            global previous_directory
+
+            active_filename = bpy.context.active_file.relative_path
+
+            # update globals
+            previous_directory = active_directory
+            params = bpy.context.area.spaces.active.params
+            active_directory = Path(bpy.path.abspath(params.directory.decode('utf-8')))
+            previous_filename = active_filename
+            
             audio_path = active_directory / active_filename
 
-            if util.is_audio(audio_path):
-                if play_audio:
-                    bpy.ops.music_player.stop()
-                    bpy.ops.music_player.play(sound_path=audio_path.as_posix())
+            if audio_path.suffix.lower() in ['.wav', '.mp3', '.aac']:
+                bpy.ops.music_player.stop()
+                bpy.ops.music_player.play(sound_path=audio_path.as_posix())
 
-    else:
-        pass
-        #print(f'callback_filename_change() - no active file or reverting fullscreen {active_directory=} {active_filename=} {previous_directory=} {previous_filename=}')
-        # active_filename = None
-        # bpy.ops.music_player.stop()
+            
+    
+
 
 # def active_file_changed(*args):
 #     print('active_file_changed() - ', args)
@@ -419,11 +415,9 @@ def register():
 
     draw_handlers_fb.append(
         bpy.types.SpaceFileBrowser.draw_handler_add(
-            callback_filename_change, (None,), 'WINDOW', 'POST_PIXEL'
+            detect_filename_change, (None,), 'WINDOW', 'POST_PIXEL'
         )
     )
-
-    
 
 
 def unregister():
@@ -438,4 +432,4 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    bpy.msgbus.clear_by_owner(music_player_owner)
+    # bpy.msgbus.clear_by_owner(music_player_owner)
