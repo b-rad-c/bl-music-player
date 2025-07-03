@@ -14,6 +14,16 @@ class MP_TOPBAR_MT_file_menu(bpy.types.Menu):
         row = self.layout.row(align=True)
         row.operator('wm.quit_blender', text='Quit', icon='QUIT')
 
+class MP_TOPBAR_MT_browser_menu(bpy.types.Menu):
+    bl_idname = 'MP_TOPBAR_MT_browser_menu'
+    bl_label = 'Browser'
+
+    def draw(self, _) -> None:
+        layout: bpy.types.UILayout = self.layout
+        column = layout.column(align=True)
+        column.operator('music_player.text_scroll_up', icon='FULLSCREEN_ENTER')
+        column.operator('music_player.text_scroll_down', icon='FULLSCREEN_ENTER')
+
 
 class MP_TOPBAR_MT_player_menu(bpy.types.Menu):
     bl_idname = 'MP_TOPBAR_MT_player_menu'
@@ -61,6 +71,7 @@ class MP_TOPBAR_MT_window_menu(bpy.types.Menu):
 
 def MP_TOPBAR_draw(self, _) -> None:
     self.layout.menu('MP_TOPBAR_MT_file_menu')
+    self.layout.menu('MP_TOPBAR_MT_browser_menu')
     self.layout.menu('MP_TOPBAR_MT_player_menu')
     self.layout.menu('MP_TOPBAR_MT_visualizer_menu')
     self.layout.menu('MP_TOPBAR_MT_window_menu')
@@ -71,6 +82,7 @@ def MP_TOPBAR_draw(self, _) -> None:
 
 classes = [
     MP_TOPBAR_MT_file_menu, 
+    MP_TOPBAR_MT_browser_menu,
     MP_TOPBAR_MT_player_menu, 
     MP_TOPBAR_MT_visualizer_menu,
     MP_TOPBAR_MT_window_menu

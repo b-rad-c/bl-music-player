@@ -304,7 +304,7 @@ class MP_TEXT_SCROLL_UP(bpy.types.Operator):
         text_scroll_offset += text_scroll_increment
         for area in context.screen.areas:
             area.tag_redraw()
-        # print(f'scrolling up: {text_scroll_offset}')
+        print(f'scrolling up: {text_scroll_offset}')
         return {'FINISHED'}
 
 
@@ -320,7 +320,7 @@ class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
         for area in context.screen.areas:
             area.tag_redraw()
         
-        # print(f'scrolling down {text_scroll_offset}')
+        print(f'scrolling down {text_scroll_offset}')
         return {'FINISHED'}
 
 #
@@ -454,7 +454,6 @@ def text_overlay_drawer(self, context):
 # register
 #
 
-classes = [MP_OP_randomize_visualizer, MP_OP_play, MP_OP_stop, MP_TEXT_SCROLL_UP, MP_TEXT_SCROLL_DOWN]
 load_post_handlers = [init_3d_viewport, init_filebrowser]
 classes = [
     MP_OP_randomize_visualizer, 
@@ -464,7 +463,9 @@ classes = [
     MP_OP_set_equalizer,
     MP_OP_play, 
     MP_OP_stop, 
-    MP_OT_fullscreen
+    MP_OT_fullscreen,
+    MP_TEXT_SCROLL_UP,
+    MP_TEXT_SCROLL_DOWN
 ]
 load_post_handlers = [init_3d_viewport, init_filebrowser, init_visualizer]
 draw_handlers_fb: List[Callable] = []

@@ -43,9 +43,9 @@ if _need_reload:
     config = importlib.reload(config)
     util = importlib.reload(util)
     ops = importlib.reload(ops)
-    shortcuts = importlib.reload(shortcuts)
     ui = importlib.reload(ui)
-
+    shortcuts = importlib.reload(shortcuts)
+    
 
 def register():
     print('Addon Register', __file__)
