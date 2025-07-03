@@ -19,10 +19,10 @@
 
 from music_player import (
     config,
-    opsdata,
     ops,
     shortcuts,
-    ui
+    ui,
+    util
 )
 
 logger = config.LoggerFactory.getLogger(__name__)
@@ -41,7 +41,7 @@ if _need_reload:
     import importlib
 
     config = importlib.reload(config)
-    opsdata = importlib.reload(opsdata)
+    util = importlib.reload(util)
     ops = importlib.reload(ops)
     shortcuts = importlib.reload(shortcuts)
     ui = importlib.reload(ui)

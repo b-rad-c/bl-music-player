@@ -45,14 +45,21 @@ addons_dir = src_dir / 'bl_music_player_app/addons'
 default_audio_file = addons_dir / 'music_player/music/Ketsa - You Best Boogie.mp3'
 
 
-def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path):
+def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path, visualizer:str|None):
     with stdout_redirected():
-        import bpy
-        import sys
         sys.path.append(str(addons_dir))
-        from music_player.opsdata import load_and_bake_audio
+        import bpy
+        from bl_music_player_app import register
+        register()
+        from music_player.util import load_and_bake_audio
 
         bpy.ops.wm.open_mainfile(filepath=str(blend_file))
+
+        if visualizer is not None:
+            bpy.context.scene.active_visualizer = visualizer
+            from music_player.ops import init_visualizer
+            init_visualizer(bpy.context)
+
         load_and_bake_audio(bpy.context, sound_path=str(audio.absolute()), background=True)
 
         bpy.context.scene.render.filepath = str(tmp_frame_dir / 'frame-')
@@ -66,7 +73,7 @@ def render_thread(threads:int, thread_num:int, audio:Path, tmp_frame_dir:Path):
         bpy.ops.render.render(animation=True)
 
 
-def main(threads:int, audio:Path, output:Path):
+def main(threads:int, audio:Path, output:Path, visualizer:str|None):
 
     with TemporaryDirectory() as tmp_frame_dir:
         tmp_frame_dir_path = Path(tmp_frame_dir)
@@ -74,9 +81,9 @@ def main(threads:int, audio:Path, output:Path):
         frame_start = time.time()
 
         if threads == 1:
-            render_thread(1, 1, audio, tmp_frame_dir_path)
+            render_thread(1, 1, audio, tmp_frame_dir_path, visualizer)
         else:
-            process_args = [(threads, i, audio, tmp_frame_dir_path) for i in range(1, threads + 1)]
+            process_args = [(threads, i, audio, tmp_frame_dir_path, visualizer) for i in range(1, threads + 1)]
             with multiprocessing.Pool(processes=threads) as pool:
                 pool_result = pool.starmap_async(render_thread, process_args)
                 pool.close()
@@ -101,22 +108,35 @@ def main(threads:int, audio:Path, output:Path):
         print('total time:', round(total_seconds / 60, 2), 'mins')
         print('done.')
 
+
+def list_visualizers():
+    sys.path.append(str(addons_dir))
+    from music_player.ops import visualizers, default_visualizer
+    print('Available visualizers:')
+    for visualizer in visualizers:
+        is_default = ' (default)' if visualizer['id'] == default_visualizer else ''
+        print(f" - {visualizer['id']} {is_default}")
+
+
 if __name__ == '__main__':
     multiprocessing.freeze_support()
 
     # cli #
 
-    parser = argparse.ArgumentParser(description='Render a musical animation.')
+    parser = argparse.ArgumentParser(description='Render a music visualizer as mov file')
     parser.add_argument('--audio', '-a', type=Path, help='Path to the audio file', default=str(default_audio_file))
-    parser.add_argument('--output', '-o', type=Path, help='Path to the output file', default='output.mp4')
+    parser.add_argument('--output', '-o', type=Path, help='Path to the output file', default='output.mov')
     parser.add_argument('--threads', '-t', type=int, help='Number of threads to use (default=8)', default=8)
+    parser.add_argument('--list-visualizers', '-l', action='store_true', help='List available visualizers and exit')
+    parser.add_argument('--visualizer', '-v', type=str, help=f'Specify the visualizer to use', default=None)
 
     args = parser.parse_args()
-
-    if not os.path.exists(args.audio):
-        raise FileNotFoundError(f'Audio file not found: {args.audio}')
-
-    if args.output.suffix != '.mp4':
-        raise ValueError('Output file must be an .mp4 file')
     
-    main(args.threads, args.audio, args.output)
+    if args.list_visualizers:
+        list_visualizers()
+
+    else:
+        if not os.path.exists(args.audio):
+            raise FileNotFoundError(f'Audio file not found: {args.audio}')
+        
+        main(args.threads, args.audio, args.output, args.visualizer)

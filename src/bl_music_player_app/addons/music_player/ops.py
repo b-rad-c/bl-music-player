@@ -18,15 +18,15 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
+import random
 from pathlib import Path
 from typing import Optional, List, Callable, Set
-from random import randint
 
 import blf
 import bpy
 
 from bpy.app.handlers import persistent
-from music_player import opsdata, config
+from music_player import util, config
 
 
 
@@ -34,13 +34,11 @@ from music_player import opsdata, config
 # globals
 #
 
-
 active_directory: Path = ''
 active_filename: Optional[str] = ''
 previous_directory: Path = ''
 previous_filename: Optional[str] = ''
 
-play_audio = True
 screen_index = 1
 random_vis_on_play = True
 is_fullscreen = False
@@ -50,27 +48,53 @@ active_file = None
 
 text_scroll_offset = 333
 text_scroll_increment = 10
+visualizers = [
+    {'id': 'arctic_wave', 'label': 'Arctic Wave'},
+    {'id': 'broken_radio', 'label': 'Broken Radio'},
+    {'id': 'combo_wave', 'label': 'Combo Wave'},
+    {'id': 'equalizer', 'label': 'Equalizer'}
+]
+
+default_visualizer = visualizers[0]['id']
+
+bpy.types.Scene.active_visualizer = bpy.props.StringProperty(name='active_visualizer', 
+                                                             default=default_visualizer,
+                                                             description='The currently active visualizer')
+
+def show_collectons(context: bpy.types.Context, eq: bool = False, wave: bool = True) -> None:
+    """
+    Show or hide the collections based on the visualizer.
+    :param context: The Blender context.
+    :param eq: Whether to show the equalizer collection.
+    :param wave: Whether to show the wave collection.
+    """
+    context.layer_collection.children['eq'].hide_viewport = not eq
+    context.layer_collection.children['eq'].collection.hide_render = not eq
+
+    context.layer_collection.children['wave'].hide_viewport = not wave
+    context.layer_collection.children['wave'].collection.hide_render = not wave
+
+def dump(context, full=False):
+    for attr in dir(context):
+        value = getattr(context, attr)
+
+        try:
+            for key, val in value.children.items():
+                print(f'{attr}.{key} >>> {val}')
+        except (TypeError, AttributeError):
+            try:
+                for key, val in value.items():
+                    print(f'{attr}.{key} >>> {val}')
+            except (TypeError, AttributeError):
+                if isinstance(value, list):
+                    for item in value:
+                        print(f'{attr} >>> {item}')
+                else:
+                    print(f'{attr} = {getattr(context, attr)}')
 
 #
-# operators
+# visualizer ops
 #
-
-
-@persistent
-def randomize_vis():
-    print('\trandomize_vis()')
-
-    waveform = bpy.context.active_object
-    waveform['color_preset'] = randint(0, 3)
-
-    nodes = waveform.modifiers['GeometryNodes']
-    nodes['Input_2'] = bool(randint(0, 1))
-    nodes['Input_3'] = bool(randint(0, 1))
-
-    # bpy.context.scene.update_render_engine()
-    # bpy.context.scene.update_tag()
-    bpy.context.view_layer.update()
-
 
 class MP_OP_randomize_visualizer(bpy.types.Operator):
 
@@ -79,18 +103,129 @@ class MP_OP_randomize_visualizer(bpy.types.Operator):
     bl_description = 'Sets random values for the visualizer parameters'
 
     def execute(self, context) -> Set[str]:
-        waveform = context.active_object
-        waveform['color_preset'] = randint(0, 3)
+        global visualizers
 
-        nodes = waveform.modifiers['GeometryNodes']
-        nodes['Input_2'] = bool(randint(0, 1))
-        nodes['Input_3'] = bool(randint(0, 1))
+        while True:
+            visualizer = random.choice(visualizers)
+            if visualizer['id'] != context.scene.active_visualizer:
+                break
+        
+        try:
+            getattr(bpy.ops.music_player, f'set_{visualizer["id"]}')()
+        except AttributeError as e:
+            print(f'Error randomizing visualizer | AttributeError: {e}')
+            return {'CANCELLED'}
 
-        # bpy.context.scene.update_render_engine()
-        # bpy.context.scene.update_tag()
-        context.view_layer.update()
         return {'FINISHED'}
+    
 
+class MP_OP_set_arctic_wave(bpy.types.Operator):
+
+    bl_idname = 'music_player.set_arctic_wave'
+    bl_label = 'Set Arctic Wave visualizer'
+    bl_description = 'Changes the visualizer to Arctic Wave'
+
+    def execute(self, context) -> Set[str]:
+        context.scene.active_visualizer = 'arctic_wave'
+
+        show_collectons(context, eq=False, wave=True)
+
+        context.scene.camera = bpy.data.objects['Camera']
+
+        # bpy.data.collections['wave'].hide_viewport = False
+        # bpy.data.collections['wave'].hide_render = False
+
+        context.scene.objects['wave 1'].hide_viewport = False
+        context.scene.objects['wave 1'].hide_render = False
+
+        context.scene.objects['wave 2'].hide_viewport = True
+        context.scene.objects['wave 2'].hide_render = True
+
+        return {'FINISHED'}
+    
+
+class MP_OP_set_broken_radio(bpy.types.Operator):
+    bl_idname = 'music_player.set_broken_radio'
+    bl_label = 'Set Broken Radio visualizer'
+    bl_description = 'Changes the visualizer to Broken Radio'
+
+    def execute(self, context) -> Set[str]:
+        context.scene.active_visualizer = 'broken_radio'
+
+        show_collectons(context, eq=False, wave=True)
+
+        context.scene.camera = bpy.data.objects['Camera']
+
+        context.scene.objects['wave 1'].hide_viewport = True
+        context.scene.objects['wave 1'].hide_render = True
+
+        context.scene.objects['wave 2'].hide_viewport = False
+        context.scene.objects['wave 2'].hide_render = False
+
+        return {'FINISHED'}
+    
+
+class MP_OP_set_combo_wave(bpy.types.Operator):
+    bl_idname = 'music_player.set_combo_wave'
+    bl_label = 'Set Combo Wave visualizer'
+    bl_description = 'Changes the visualizer to Combo Wave'
+
+    def execute(self, context) -> Set[str]:
+        context.scene.active_visualizer = 'combo_wave'
+
+        show_collectons(context, eq=False, wave=True)
+
+        context.scene.camera = bpy.data.objects['Camera']
+
+        context.scene.objects['wave 1'].hide_viewport = False
+        context.scene.objects['wave 1'].hide_render = False
+
+        context.scene.objects['wave 2'].hide_viewport = False
+        context.scene.objects['wave 2'].hide_render = False
+
+        return {'FINISHED'}
+    
+
+class MP_OP_set_equalizer(bpy.types.Operator):
+
+    bl_idname = 'music_player.set_equalizer'
+    bl_label = 'Set Equalizer visualizer'
+    bl_description = 'Changes the visualizer to Equalizer'
+
+    def execute(self, context) -> Set[str]:
+        context.scene.active_visualizer = 'equalizer'
+        
+        show_collectons(context, eq=True, wave=False)
+
+        eq_cam_names = list(filter(lambda c: c.startswith('eq cam'), bpy.data.objects.keys()))
+        eq_cam_names.sort()
+        
+        context.scene.camera = bpy.data.objects[eq_cam_names[0]]
+
+        print(f'camera names: {eq_cam_names}')
+
+        def change_camera():
+            if context.scene.active_visualizer != 'equalizer':
+                # return None to disable the timer
+                print('change_camera() - visualizer changed, disabling timer')
+                return None
+            
+            new_cam = random.choice(eq_cam_names)
+            context.scene.camera = bpy.data.objects[new_cam]
+
+            delay = random.uniform(5, 10)  # random delay between 5 and 15 seconds
+            print(f'change_camera() - changing camera to {new_cam}, next change in {delay:.2f} seconds')
+
+            return delay  # return a random time in seconds to change the camera again
+        
+        bpy.app.timers.register(change_camera, first_interval=10, persistent=True)
+
+        return {'FINISHED'}
+    
+
+#
+# playback ops
+#
 
 class MP_OP_play(bpy.types.Operator):
 
@@ -101,7 +236,7 @@ class MP_OP_play(bpy.types.Operator):
     sound_path: bpy.props.StringProperty(name='Sound path', description='The path to a sound file to play')
 
     def execute(self, context) -> Set[str]:
-        opsdata.load_and_bake_audio(context, sound_path=self.sound_path)
+        util.load_and_bake_audio(context, sound_path=self.sound_path)
 
         bpy.ops.screen.animation_play(sync=True)
 
@@ -119,7 +254,7 @@ class MP_OP_stop(bpy.types.Operator):
         return {'FINISHED'}
 
 
-class MV_OT_fullscreen(bpy.types.Operator):
+class MP_OT_fullscreen(bpy.types.Operator):
     bl_idname = 'music_player.fullscreen'
     bl_label = 'Fullscreen + Fill Area'
     bl_description = 'fullscreen'
@@ -130,9 +265,8 @@ class MV_OT_fullscreen(bpy.types.Operator):
 
         print(f'music_player.fullscreen {is_fullscreen=} {is_reverting_fullscreen=}')
 
-        view_3d_area = opsdata.find_area(bpy.context, 'VIEW_3D')
-        view_3d_context = bpy.context.copy()
-        view_3d_context['area'] = view_3d_area
+        view_3d_area = util.find_area(context, 'VIEW_3D')
+        view_3d_context = util.get_context_for_area(view_3d_area)
 
         with context.temp_override(**view_3d_context):
             if is_reverting_fullscreen:
@@ -140,6 +274,7 @@ class MV_OT_fullscreen(bpy.types.Operator):
                 # use this global to ensure only the first instance runs to prevent race conditions
                 print('music_player.fullscreen_test - cancel')
                 return {'CANCELLED'}
+            
             elif is_fullscreen:
                 is_reverting_fullscreen = True
                 print('music_player.fullscreen_test - revert')
@@ -147,6 +282,7 @@ class MV_OT_fullscreen(bpy.types.Operator):
                 bpy.ops.screen.back_to_previous()
                 bpy.ops.wm.window_fullscreen_toggle()
                 is_reverting_fullscreen = False
+
             else:
                 print('music_player.fullscreen_test - enable')
                 bpy.ops.screen.header_toggle_menus()
@@ -205,38 +341,76 @@ def init_3d_viewport(_):
     print('\t-> done')
 
 @persistent
-def init_filebrowser(_):
-    print('init_filebrowser()')
-    params = opsdata.set_filebrowser_directory(config.MUSIC_DIRECTORY)
-    params.display_type = 'LIST_VERTICAL'
+def init_visualizer(_):
+
+    visualizer = bpy.context.scene.active_visualizer
+
+    print('init_visualizer() - ', visualizer)
+
+    try:
+        getattr(bpy.ops.music_player, f'set_{visualizer}')()
+    except AttributeError as e:
+        print(f'Error initializing visualizer | AttributeError: {e}')
+        return {'CANCELLED'}
+
     print('\t-> done')
 
 @persistent
-def callback_filename_change(_):
-    # init globals
-    global active_directory
-    global active_filename
-    global previous_directory
-    global previous_filename
-    global play_audio
+def init_filebrowser(_):
+    print('init_filebrowser()')
+    #params = util.set_filebrowser_directory()
+
+
+    area = util.find_area(bpy.context, 'FILE_BROWSER')
+    params = area.spaces.active.params
+    params.directory = bytes(config.MUSIC_DIRECTORY.as_posix(), 'utf-8')
+    params.display_type = 'LIST_VERTICAL'
+
+    # file_browser_context = util.get_context_for_area(area)
+    # with bpy.context.temp_override(**file_browser_context):
+    #     # dump(bpy.context, full=True)
+    #     fb = bpy.context.space_data
+    #     # fb.params.filename
+    #     #breakpoint()
+    #     bpy.msgbus.subscribe_rna(
+    #         key=fb.params,
+    #         owner=music_player_owner,
+    #         args=(),
+    #         notify=active_file_changed,
+    #         options={'PERSISTENT'}
+    #     )
+    #     print(f'subscribed to active_file changes: {fb}')
+    print('\t-> done')
+
+@persistent
+def detect_filename_change(_):
+    """this is run each time the filebrowser is redrawn, so we can check if the active file has changed"""
+
     global is_reverting_fullscreen
 
-    # update globals
-    previous_directory = active_directory
-    params = bpy.context.area.spaces.active.params
-    active_directory = Path(bpy.path.abspath(params.directory.decode('utf-8')))
-    previous_filename = active_filename
-
-    # check active file
+    # if we are in filebrowser
     if bpy.context.active_file and not is_reverting_fullscreen:
-        active_filename = bpy.context.active_file.relative_path
-        if active_filename != previous_filename:
+        global previous_filename
+
+        # if filename has changed update state and play audio
+        if previous_filename != bpy.context.active_file.relative_path:
+            global active_filename
+            global active_directory
+            global previous_directory
+
+            active_filename = bpy.context.active_file.relative_path
+
+            # update globals
+            previous_directory = active_directory
+            params = bpy.context.area.spaces.active.params
+            active_directory = Path(bpy.path.abspath(params.directory.decode('utf-8')))
+            previous_filename = active_filename
+            
             audio_path = active_directory / active_filename
 
-            if opsdata.is_audio(audio_path):
-                if play_audio:
-                    bpy.ops.music_player.stop()
-                    bpy.ops.music_player.play(sound_path=audio_path.as_posix())
+            if audio_path.suffix.lower() in ['.wav', '.mp3', '.aac']:
+                bpy.ops.music_player.stop()
+                bpy.ops.music_player.play(sound_path=audio_path.as_posix())
 
     else:
         active_filename = None
@@ -250,6 +424,7 @@ blf.word_wrap(0, 500)
 blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
 # ui_scale = context.preferences.view.ui_scale
 def text_overlay_drawer(self, context):
+            
     
     # currently scroll is only responsive if song is playing
     blf.size(font_id, 54.0)
@@ -269,12 +444,29 @@ def text_overlay_drawer(self, context):
 
 
 
+
+# def active_file_changed(*args):
+#     print('active_file_changed() - ', args)
+
+# music_player_owner = object()
+
 #
 # register
 #
 
-classes = [MP_OP_randomize_visualizer, MP_OP_play, MP_OP_stop, MV_OT_fullscreen, MP_TEXT_SCROLL_UP, MP_TEXT_SCROLL_DOWN]
+classes = [MP_OP_randomize_visualizer, MP_OP_play, MP_OP_stop, MP_TEXT_SCROLL_UP, MP_TEXT_SCROLL_DOWN]
 load_post_handlers = [init_3d_viewport, init_filebrowser]
+classes = [
+    MP_OP_randomize_visualizer, 
+    MP_OP_set_arctic_wave,
+    MP_OP_set_broken_radio,
+    MP_OP_set_combo_wave,
+    MP_OP_set_equalizer,
+    MP_OP_play, 
+    MP_OP_stop, 
+    MP_OT_fullscreen
+]
+load_post_handlers = [init_3d_viewport, init_filebrowser, init_visualizer]
 draw_handlers_fb: List[Callable] = []
 draw_handlers_spv3d: List[Callable] = []
 
@@ -287,7 +479,7 @@ def register():
         bpy.app.handlers.load_post.append(handler)
 
     draw_handlers_fb.append(
-        bpy.types.SpaceFileBrowser.draw_handler_add(callback_filename_change, (None,), 'WINDOW', 'POST_PIXEL')
+        bpy.types.SpaceFileBrowser.draw_handler_add(detect_filename_change, (None,), 'WINDOW', 'POST_PIXEL')
     )
 
     draw_handlers_spv3d.append(
@@ -308,3 +500,5 @@ def unregister():
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+
+    # bpy.msgbus.clear_by_owner(music_player_owner)

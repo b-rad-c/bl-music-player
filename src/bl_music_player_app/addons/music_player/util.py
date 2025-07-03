@@ -21,17 +21,10 @@
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 import bpy
-from glob import glob
-from music_player.config import VISUALIZER_DIRECTORY
 
-
-def is_audio(filepath: Path) -> bool:
-    return filepath.suffix.lower() in [
-        ".wav",
-        ".mp3",
-        ".aac"
-    ]
-
+#
+# area functions
+#
 
 def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.Area]:
     if isinstance(context, dict):
@@ -41,6 +34,7 @@ def find_area(context: bpy.types.Context, area_name: str) -> Optional[bpy.types.
         screen = context.screen
 
     for area in screen.areas:
+        # print(f'find_area: checking area {area.type} for {area_name}')
         if area.type == area_name:
             return area
     return None
@@ -63,23 +57,18 @@ def get_context_for_area(area: bpy.types.Area, region_type="WINDOW") -> Dict:
     return {}
 
 
-def set_filebrowser_directory(path: Path) -> bpy.types.FileSelectParams:
-    area = find_area(bpy.context, 'FILE_BROWSER')
-    params = area.spaces.active.params
-    params.directory = bytes(path.as_posix(), 'utf-8')
-    return params
+def close_area(area: bpy.types.Area) -> None:
+    bpy.ops.screen.area_close(get_context_for_area(area))
 
+#
+# sequencer functions
+#
 
 def del_all_sequences(context: bpy.types.Context) -> None:
     for seq_name in [s.name for s in context.scene.sequence_editor.sequences_all]:
         context.scene.sequence_editor.sequences.remove(
             context.scene.sequence_editor.sequences[seq_name]
         )
-
-
-def close_area(area: bpy.types.Area) -> None:
-    bpy.ops.screen.area_close(get_context_for_area(area))
-
 
 def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
     """
@@ -106,14 +95,16 @@ def fit_frame_range_to_strips(context: bpy.types.Context) -> Tuple[int, int]:
 
     return (scene.frame_start, scene.frame_end)
 
-# 
-
 def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
     print(f'music_player.play({sound_path})')
 
     # reset sequence
     bpy.ops.screen.animation_cancel()
+
+    # if scene is not None:
+    #     bpy.context.window.scene = bpy.data.scenes[scene]
+
     bpy.context.scene.frame_set(1)
     del_all_sequences(context)
     # add audio to sequence
@@ -131,17 +122,36 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
     if not background:
         with context.temp_override(**seq_context):
             bpy.ops.sequencer.view_all()
-
-    print('\tbaking...')
+    
     graph_area = find_area(bpy.context, 'GRAPH_EDITOR')
     graph_context = get_context_for_area(graph_area)
+
     with context.temp_override(**graph_context):
+        bpy.ops.object.select_all(action='DESELECT')
+
+        bpy.data.screens["Default"].areas[3].spaces[0].dopesheet.show_only_selected = True
+
+        print('\tbaking full...')
+        bpy.data.objects['audio signal - full'].select_set(True)
         bpy.ops.graph.sound_to_samples(filepath=sound_path)
+        bpy.data.objects['audio signal - full'].select_set(False)
 
-    # write file
+        print('\tbaking low...')
+        bpy.data.objects['audio signal - low'].select_set(True)
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=0, high=250)
+        bpy.data.objects['audio signal - low'].select_set(False)
 
-    # bpy.ops.wm.save_as_mainfile(filepath='movie.blend')
+        print('\tbaking low mid...')
+        bpy.data.objects['audio signal - low mid'].select_set(True)
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=250, high=400)
+        bpy.data.objects['audio signal - low mid'].select_set(False)
 
-    # bpy.context.scene.render.filepath = 'movie.mp4' 
-    # bpy.context.scene.render.image_settings.file_format = 'PNG'
-    
+        print('\tbaking high mid...')
+        bpy.data.objects['audio signal - high mid'].select_set(True)
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=400, high=800)
+        bpy.data.objects['audio signal - high mid'].select_set(False)
+
+        print('\tbaking high...')
+        bpy.data.objects['audio signal - high'].select_set(True)
+        bpy.ops.graph.sound_to_samples(filepath=sound_path, low=800, high=100000)
+        bpy.data.objects['audio signal - high'].select_set(False)

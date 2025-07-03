@@ -1,15 +1,10 @@
-from typing import Any
 import bpy
+from .ops import visualizers
 
 
 #
 # menus
 #
-
-def MP_TOPBAR_draw(self, _) -> None:
-    self.layout.menu('MP_TOPBAR_MT_file_menu')
-    self.layout.menu('MP_TOPBAR_MT_player_menu')
-    self.layout.menu('MP_TOPBAR_MT_window_menu')
 
 class MP_TOPBAR_MT_file_menu(bpy.types.Menu):
     bl_idname = 'MP_TOPBAR_MT_file_menu'
@@ -24,10 +19,35 @@ class MP_TOPBAR_MT_player_menu(bpy.types.Menu):
     bl_idname = 'MP_TOPBAR_MT_player_menu'
     bl_label = 'Player'
 
-    def draw(self, _) -> None:
-        row = self.layout.row(align=True)
+    def draw(self, context) -> None:
+        row = self.layout.column(align=True)
         row.operator('music_player.stop', text='Stop', icon='SNAP_FACE')
 
+
+class MP_TOPBAR_MT_visualizer_menu(bpy.types.Menu):
+    bl_idname = 'MP_TOPBAR_MT_visualizer_menu'
+    bl_label = 'Visualizer'
+
+    def draw(self, context) -> None:
+        row = self.layout.column(align=True)
+
+        row.operator('music_player.randomize_visualizer', text='Randomize visualizer', icon='BLANK1')
+        row.separator()
+
+        row.label(text='Select visualizer', icon='BLANK1')
+
+        for visualizer in visualizers:
+            if context.scene.active_visualizer == visualizer['id']:
+                wave_icon = 'CHECKMARK'
+            else:
+                wave_icon = 'BLANK1'
+
+            row.operator(
+                'music_player.set_' + visualizer['id'], 
+                text=visualizer['label'],
+                icon=wave_icon
+            )
+        
 
 class MP_TOPBAR_MT_window_menu(bpy.types.Menu):
     bl_idname = 'MP_TOPBAR_MT_window_menu'
@@ -39,11 +59,22 @@ class MP_TOPBAR_MT_window_menu(bpy.types.Menu):
         column.operator('music_player.fullscreen', icon='FULLSCREEN_ENTER')
         column.operator('wm.window_fullscreen_toggle', icon='FULLSCREEN_ENTER')
 
+def MP_TOPBAR_draw(self, _) -> None:
+    self.layout.menu('MP_TOPBAR_MT_file_menu')
+    self.layout.menu('MP_TOPBAR_MT_player_menu')
+    self.layout.menu('MP_TOPBAR_MT_visualizer_menu')
+    self.layout.menu('MP_TOPBAR_MT_window_menu')
+
 #
 # register
 #
 
-classes = [MP_TOPBAR_MT_file_menu, MP_TOPBAR_MT_player_menu, MP_TOPBAR_MT_window_menu]
+classes = [
+    MP_TOPBAR_MT_file_menu, 
+    MP_TOPBAR_MT_player_menu, 
+    MP_TOPBAR_MT_visualizer_menu,
+    MP_TOPBAR_MT_window_menu
+]
 
 
 def register():
