@@ -23,32 +23,17 @@ from music_player.ops import MP_OT_fullscreen
 
 
 addon_keymaps = []
+keymap = None
 
 def register_keymaps():
     global addon_keymaps
+    global keymap
 
-    # Turn off autosave prefs.
     bpy.context.preferences.use_preferences_save = False
-
-    # view_3d_area = opsdata.find_area(bpy.context, 'VIEW_3D')
-    # view_3d_context = opsdata.get_context_for_area(view_3d_area)
-
-    # with bpy.context.temp_override(**view_3d_context):
     keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name='Screen', space_type='EMPTY', region_type='WINDOW')
-
-
-    # addon_keymaps.append(
-    #     (
-    #         keymap,
-    #         keymap.keymap_items.new(
-    #             'wm.window_fullscreen_toggle', value='PRESS', type='F', head=True
-    #         ),
-    #     )
-    # )
    
-    addon_keymaps.append(
-        (
-            keymap,
+    addon_keymaps.extend(
+        [
             keymap.keymap_items.new(
                 MP_OT_fullscreen.bl_idname, value='PRESS', type='F', head=True
             ),
@@ -64,7 +49,7 @@ def register_keymaps():
             keymap.keymap_items.new(
                 MP_TEXT_SCROLL_DOWN.bl_idname, value='ANY', type='WHEELDOWNMOUSE', head=True
             ),
-        )
+        ]
     )
 
     bpy.context.window_manager.keyconfigs.update()
@@ -76,10 +61,11 @@ def register():
 
 def unregister_keymaps():
     global addon_keymaps
+    global keymap
     if not bpy.app.background:
-        for km, kmi in addon_keymaps:
+        for kmi in addon_keymaps:
             try:
-                km.keymap_items.remove(kmi)
+                keymap.keymap_items.remove(kmi)
             except ReferenceError:
                 # Happens when you press CTRL+Q, I guess this means that this keymap item is already removed?
                 pass
@@ -91,6 +77,3 @@ def unregister():
     # Does not work if blender runs in background.
     if not bpy.app.background:
         unregister_keymaps()
-
-    # Handlers
-    # bpy.app.handlers.load_post.remove(delete_shortcuts_load_post)
