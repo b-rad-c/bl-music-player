@@ -42,7 +42,7 @@ previous_filename: Optional[str] = ''
 screen_index = 1
 random_vis_on_play = True
 is_fullscreen = False
-is_reverting_fullscreen = False
+changing_fullscreen = False
 
 active_file = None
 
@@ -261,36 +261,40 @@ class MP_OT_fullscreen(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         global is_fullscreen
-        global is_reverting_fullscreen
+        global changing_fullscreen
 
-        print(f'music_player.fullscreen {is_fullscreen=} {is_reverting_fullscreen=}')
+        print(f'* music_player.fullscreen {is_fullscreen=} {changing_fullscreen=}')
 
         view_3d_area = util.find_area(context, 'VIEW_3D')
         view_3d_context = util.get_context_for_area(view_3d_area)
 
         with context.temp_override(**view_3d_context):
-            if is_reverting_fullscreen:
+            if changing_fullscreen:
                 # for some reason this operator runs multiple times when called?
                 # use this global to ensure only the first instance runs to prevent race conditions
                 print('music_player.fullscreen_test - cancel')
                 return {'CANCELLED'}
             
             elif is_fullscreen:
-                is_reverting_fullscreen = True
+                changing_fullscreen = True
                 print('music_player.fullscreen_test - revert')
-                bpy.ops.screen.header_toggle_menus()
+                
                 bpy.ops.screen.back_to_previous()
+                bpy.ops.screen.header_toggle_menus()
                 bpy.ops.wm.window_fullscreen_toggle()
-                is_reverting_fullscreen = False
+                changing_fullscreen = False
+                is_fullscreen = False
+                return {'FINISHED'}
 
             else:
+                changing_fullscreen = True
                 print('music_player.fullscreen_test - enable')
                 bpy.ops.screen.header_toggle_menus()
                 bpy.ops.screen.screen_full_area(use_hide_panels=True)
                 bpy.ops.wm.window_fullscreen_toggle()
-
-        is_fullscreen = not is_fullscreen
-        return {'FINISHED'}
+                changing_fullscreen = False
+                is_fullscreen = True
+                return {'FINISHED'}
 
 
 class MP_TEXT_SCROLL_UP(bpy.types.Operator):
@@ -386,10 +390,10 @@ def init_filebrowser(_):
 def detect_filename_change(_):
     """this is run each time the filebrowser is redrawn, so we can check if the active file has changed"""
 
-    global is_reverting_fullscreen
+    global changing_fullscreen
 
     # if we are in filebrowser
-    if bpy.context.active_file and not is_reverting_fullscreen:
+    if bpy.context.active_file and not changing_fullscreen:
         global previous_filename
 
         # if filename has changed update state and play audio
@@ -413,8 +417,9 @@ def detect_filename_change(_):
                 bpy.ops.music_player.play(sound_path=audio_path.as_posix())
 
     else:
-        active_filename = None
-        bpy.ops.music_player.stop()
+        print('detect_filename_change() - not active file or reverting fullscreen')
+        # active_filename = None
+        # bpy.ops.music_player.stop()
 
 
 font_id = 0
@@ -423,9 +428,8 @@ blf.enable(0, blf.WORD_WRAP)
 blf.word_wrap(0, 500)
 blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
 # ui_scale = context.preferences.view.ui_scale
+
 def text_overlay_drawer(self, context):
-            
-    
     # currently scroll is only responsive if song is playing
     blf.size(font_id, 54.0)
     blf.position(font_id, 100, 75 + text_scroll_offset, 0)
