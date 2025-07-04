@@ -1,2 +1,3 @@
 fake-bpy-module-latest
 blenv
+./deps/mspec

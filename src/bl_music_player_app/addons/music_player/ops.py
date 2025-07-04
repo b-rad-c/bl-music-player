@@ -27,6 +27,8 @@ import bpy
 
 from bpy.app.handlers import persistent
 from music_player import util, config
+from mspec import load_spec
+from mspec.markup import lingo_app, render_output, lingo_execute, lingo_update_state
 
 
 
@@ -447,6 +449,62 @@ def text_overlay_drawer(self, context):
     """.strip())
 
 
+# spec = load_spec('hello-world-page.json')
+spec = {
+
+    "params": {},
+
+    "state": {},
+
+    "ops": {},
+
+    "output": [
+        {"heading": {"text": "Hello World"}, "level": 1},
+        {"block": [
+            {"text": "I am a sample page."}
+        ]}
+    ]
+
+}
+app = lingo_app(spec)
+browser_doc = render_output(lingo_update_state(app))
+
+line_spacing = 75
+header_size = 54.0
+text_size = 22.0
+left_margin = 100
+
+def browser2_drawer(self, context):
+    """"""
+    document_offset = text_scroll_offset
+
+    for n, element in enumerate(browser_doc):
+        if 'heading' in element:
+            # print(f'render_heading: {element}')
+            blf.size(font_id, header_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, element['heading'])
+            document_offset -= line_spacing
+
+        elif 'link' in element:
+            print(f'render_link: {element}')
+        elif 'button' in element:
+            print(f'render_button: {element}')
+        elif 'break' in element:
+            print(f'render_break: {element}')
+        elif 'input' in element:
+            print(f'render_input: {element}')
+        elif 'text' in element:
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, element['text'])
+            document_offset -= line_spacing
+
+        else:
+            raise ValueError('Unknown element type')
+    
+
+
 
 
 # def active_file_changed(*args):
@@ -488,7 +546,7 @@ def register():
     )
 
     draw_handlers_spv3d.append(
-        bpy.types.SpaceView3D.draw_handler_add(text_overlay_drawer, (None, None), 'WINDOW', 'POST_PIXEL')
+        bpy.types.SpaceView3D.draw_handler_add(browser2_drawer, (None, None), 'WINDOW', 'POST_PIXEL')
     )
 
 

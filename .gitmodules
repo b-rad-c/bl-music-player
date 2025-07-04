@@ -1,0 +1,3 @@
+[submodule "deps/mspec"]
+	path = deps/mspec
+	url = https://github.com/medium-tech/mspec.git

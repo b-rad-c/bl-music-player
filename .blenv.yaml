@@ -5,6 +5,7 @@ environments:
     blender: /Applications/Blender.app/Contents/MacOS/Blender
     env_file: .env
     app_template: 'bl_music_player_app'
+    python_use_system_env: true
     addons:
       - music_player
 project:
