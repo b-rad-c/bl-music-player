@@ -19,6 +19,7 @@
 # (c) 2021, Blender Foundation - Paul Golter
 
 import random
+import json
 from pathlib import Path
 from typing import Optional, List, Callable, Set
 
@@ -27,7 +28,7 @@ import bpy
 
 from bpy.app.handlers import persistent
 from music_player import util, config
-from mspec import load_spec
+from mspec import sample_spec_dir
 from mspec.markup import lingo_app, render_output, lingo_execute, lingo_update_state
 
 
@@ -424,51 +425,32 @@ def detect_filename_change(_):
         # bpy.ops.music_player.stop()
 
 
+#
+# browser 2
+#
+
 font_id = 0
 
+# ui_scale = context.preferences.view.ui_scale
 blf.enable(0, blf.WORD_WRAP)
 blf.word_wrap(0, 500)
 blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
-# ui_scale = context.preferences.view.ui_scale
 
-def text_overlay_drawer(self, context):
-    # currently scroll is only responsive if song is playing
-    blf.size(font_id, 54.0)
-    blf.position(font_id, 100, 75 + text_scroll_offset, 0)
-    blf.draw(font_id, 'Test Header')
+# documents
+spec_paths = [
+    sample_spec_dir / 'hello-world-page.json',
+    sample_spec_dir / 'test-page.json',
+]
+def load_page(spec_path: str) -> dict:
+    with open(spec_path) as f:
+        return json.load(f)
 
-    blf.size(font_id, 42.0)
-    blf.position(font_id, 100, 0 + text_scroll_offset, 0)
-    blf.draw(font_id, 'This is a subtitle')
-
-    blf.size(font_id, 22.0)
-    blf.position(font_id, 100, -75 + text_scroll_offset, 0)
-    
-    blf.draw(font_id, """
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-    """.strip())
-
-
-# spec = load_spec('hello-world-page.json')
-spec = {
-
-    "params": {},
-
-    "state": {},
-
-    "ops": {},
-
-    "output": [
-        {"heading": {"text": "Hello World"}, "level": 1},
-        {"block": [
-            {"text": "I am a sample page."}
-        ]}
-    ]
-
-}
+# state
+spec = load_page(spec_paths[0])
 app = lingo_app(spec)
 browser_doc = render_output(lingo_update_state(app))
 
+# style
 line_spacing = 75
 header_size = 54.0
 text_size = 22.0
@@ -502,15 +484,7 @@ def browser2_drawer(self, context):
 
         else:
             raise ValueError('Unknown element type')
-    
 
-
-
-
-# def active_file_changed(*args):
-#     print('active_file_changed() - ', args)
-
-# music_player_owner = object()
 
 #
 # register

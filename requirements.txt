@@ -1,2 +1,3 @@
 bpy
 numpy<2
+./deps/mspec
