@@ -565,9 +565,6 @@ def browser2_drawer(self, context):
         elif 'break' in element:
             # don't use end_line bc it may insert a break
             # end_line()
-            # blf.size(font_id, text_size)
-            # blf.position(font_id, left_margin, document_offset, 0)
-            # blf.draw(font_id, f'break :: {element["break"]}')
             document_offset -= line_height * element['break']
             left_offset = left_margin
 
@@ -604,29 +601,10 @@ def browser2_drawer(self, context):
                 blf.draw(font_id, text_to_draw)
                 left_offset += width
 
-            # print(f'text :: {element["text"]} | left_offset: {left_offset} | document_offset: {document_offset}')
-                
-
         else:
             raise ValueError('Unknown element type')
         
     end_line()
-        
-    # flush_text()
-    # blf.size(font_id, text_size)
-    # left_offset = left_margin
-    # blf.position(font_id, left_offset, document_offset, 0)
-
-    # blf.draw(font_id, f'one ') 
-    # left_offset += blf.dimensions(font_id, 'one ')[0]
-
-    # blf.position(font_id, left_offset, document_offset, 0)
-    # blf.draw(font_id, f'two ')
-    # left_offset += blf.dimensions(font_id, 'two ')[0]
-
-    # blf.position(font_id, left_offset, document_offset, 0)
-    # blf.draw(font_id, f'three ')
-    # left_offset += blf.dimensions(font_id, 'three ')[0]
 
 #
 # register
