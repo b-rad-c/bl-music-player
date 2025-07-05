@@ -50,7 +50,7 @@ changing_fullscreen = False
 active_file = None
 
 text_scroll_offset = 333
-text_scroll_increment = 10
+text_scroll_increment = 50
 visualizers = [
     {'id': 'arctic_wave', 'label': 'Arctic Wave'},
     {'id': 'broken_radio', 'label': 'Broken Radio'},
@@ -432,8 +432,8 @@ def detect_filename_change(_):
 font_id = 0
 
 # ui_scale = context.preferences.view.ui_scale
-blf.enable(0, blf.WORD_WRAP)
-blf.word_wrap(0, 500)
+# blf.enable(0, blf.WORD_WRAP)
+# blf.word_wrap(0, 500)
 blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
 
 # documents
@@ -446,7 +446,7 @@ def load_page(spec_path: str) -> dict:
         return json.load(f)
 
 # state
-spec = load_page(spec_paths[0])
+spec = load_page(spec_paths[1])
 app = lingo_app(spec)
 browser_doc = render_output(lingo_update_state(app))
 
@@ -455,13 +455,32 @@ line_spacing = 75
 header_size = 54.0
 text_size = 22.0
 left_margin = 100
+wrap_width = 500
 
 def browser2_drawer(self, context):
     """"""
     document_offset = text_scroll_offset
+    text_buffer = ''
+
+    def flush_text():
+        return
+        nonlocal text_buffer
+        nonlocal document_offset
+        if not text_buffer:
+            return
+        
+        for i in range(0, len(text_buffer), wrap_width):
+            line = text_buffer[i:i + wrap_width]
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, line)
+            document_offset -= line_spacing
+
+        text_buffer = ''
 
     for n, element in enumerate(browser_doc):
         if 'heading' in element:
+            flush_text()
             # print(f'render_heading: {element}')
             blf.size(font_id, header_size)
             blf.position(font_id, left_margin, document_offset, 0)
@@ -469,21 +488,72 @@ def browser2_drawer(self, context):
             document_offset -= line_spacing
 
         elif 'link' in element:
-            print(f'render_link: {element}')
+            flush_text()
+            try:
+                display_text = element['text']
+            except KeyError:
+                display_text = element['link']
+            
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, f'link :: {display_text} ({element["link"]})')
+            document_offset -= line_spacing
+
         elif 'button' in element:
-            print(f'render_button: {element}')
+            flush_text()
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, 'button :: ' + element['text'])
+            document_offset -= line_spacing
+
         elif 'break' in element:
-            print(f'render_break: {element}')
+            flush_text()
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, f'break :: {element["break"]}')
+            document_offset -= line_spacing * element['break']
+
         elif 'input' in element:
-            print(f'render_input: {element}')
+            flush_text()
+            
+            try:
+                state_field_name = list(element['bind']['state'].keys())[0]
+            except (KeyError, IndexError):
+                raise ValueError('Input element must bind to a state state')
+            
+            field_type = app.spec['state'][state_field_name]['type']
+            
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, f'input :: {state_field_name} ({field_type})')
+            document_offset -= line_spacing
+
         elif 'text' in element:
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
-            blf.draw(font_id, element['text'])
+            blf.draw(font_id, f'text :: {element["text"]}')
+            text_buffer += element['text']
             document_offset -= line_spacing
 
         else:
             raise ValueError('Unknown element type')
+        
+    flush_text()
+    blf.size(font_id, text_size)
+    left_offset = left_margin
+    blf.position(font_id, left_offset, document_offset, 0)
+
+    blf.draw(font_id, f'one ') 
+    left_offset += blf.dimensions(font_id, 'one ')[0]
+
+    blf.position(font_id, left_offset, document_offset, 0)
+    blf.draw(font_id, f'two ')
+    left_offset += blf.dimensions(font_id, 'two ')[0]
+
+    blf.position(font_id, left_offset, document_offset, 0)
+    blf.draw(font_id, f'three ')
+    left_offset += blf.dimensions(font_id, 'three ')[0]
+
 
 
 #
