@@ -49,7 +49,7 @@ changing_fullscreen = False
 
 active_file = None
 
-text_scroll_offset = 333
+text_scroll_offset = 1000
 text_scroll_increment = 50
 visualizers = [
     {'id': 'arctic_wave', 'label': 'Arctic Wave'},
@@ -451,44 +451,29 @@ app = lingo_app(spec)
 browser_doc = render_output(lingo_update_state(app))
 
 # style
-line_spacing = 75
+line_height_ratio = 1.75
 header_size = 54.0
 text_size = 22.0
 left_margin = 100
 wrap_width = 500
 
-def browser2_drawer(self, context):
+blf.size(font_id, text_size)
+line_height = blf.dimensions(font_id, 'A')[1] * line_height_ratio
+
+
+def browser2_debug_drawer(self, context):
     """"""
     document_offset = text_scroll_offset
     text_buffer = ''
 
-    def flush_text():
-        return
-        nonlocal text_buffer
-        nonlocal document_offset
-        if not text_buffer:
-            return
-        
-        for i in range(0, len(text_buffer), wrap_width):
-            line = text_buffer[i:i + wrap_width]
-            blf.size(font_id, text_size)
-            blf.position(font_id, left_margin, document_offset, 0)
-            blf.draw(font_id, line)
-            document_offset -= line_spacing
-
-        text_buffer = ''
-
     for n, element in enumerate(browser_doc):
         if 'heading' in element:
-            flush_text()
-            # print(f'render_heading: {element}')
             blf.size(font_id, header_size)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, element['heading'])
-            document_offset -= line_spacing
+            document_offset -= line_height
 
         elif 'link' in element:
-            flush_text()
             try:
                 display_text = element['text']
             except KeyError:
@@ -497,24 +482,21 @@ def browser2_drawer(self, context):
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, f'link :: {display_text} ({element["link"]})')
-            document_offset -= line_spacing
+            document_offset -= line_height
 
         elif 'button' in element:
-            flush_text()
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, 'button :: ' + element['text'])
-            document_offset -= line_spacing
+            document_offset -= line_height
 
         elif 'break' in element:
-            flush_text()
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, f'break :: {element["break"]}')
-            document_offset -= line_spacing * element['break']
+            document_offset -= line_height * element['break']
 
         elif 'input' in element:
-            flush_text()
             
             try:
                 state_field_name = list(element['bind']['state'].keys())[0]
@@ -526,35 +508,113 @@ def browser2_drawer(self, context):
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, f'input :: {state_field_name} ({field_type})')
-            document_offset -= line_spacing
+            document_offset -= line_height
 
         elif 'text' in element:
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, f'text :: {element["text"]}')
             text_buffer += element['text']
-            document_offset -= line_spacing
+            document_offset -= line_height
+
+        else:
+            raise ValueError('Unknown element type')
+
+
+def browser2_drawer(self, context):
+    """"""
+    document_offset = text_scroll_offset
+    left_offset = left_margin
+    
+    def end_line():
+        nonlocal document_offset
+        nonlocal left_offset
+        
+        if left_offset > left_margin:
+            document_offset -= line_height
+            left_offset = left_margin
+
+    for n, element in enumerate(browser_doc):
+        if 'heading' in element:
+            end_line()
+            blf.size(font_id, header_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, element['heading'])
+            document_offset -= line_height * 2
+
+        elif 'link' in element:
+            # end_line()
+            try:
+                display_text = f'<{element["text"]}>'
+            except KeyError:
+                display_text = f'<{element["link"]}>'
+            
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_offset, document_offset, 0)
+            blf.draw(font_id, display_text)
+            left_offset += blf.dimensions(font_id, display_text)[0]
+            # document_offset -= line_height
+
+        elif 'button' in element:
+            end_line()
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, 'button :: ' + element['text'])
+            document_offset -= line_height
+
+        elif 'break' in element:
+            # don't use end_line bc it may insert a break
+            # end_line()
+            # blf.size(font_id, text_size)
+            # blf.position(font_id, left_margin, document_offset, 0)
+            # blf.draw(font_id, f'break :: {element["break"]}')
+            document_offset -= line_height * element['break']
+            left_offset = left_margin
+
+        elif 'input' in element:
+            end_line()
+            try:
+                state_field_name = list(element['bind']['state'].keys())[0]
+            except (KeyError, IndexError):
+                raise ValueError('Input element must bind to a state state')
+            
+            field_type = app.spec['state'][state_field_name]['type']
+            
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_margin, document_offset, 0)
+            blf.draw(font_id, f'input :: {state_field_name} ({field_type})')
+            document_offset -= line_height
+
+        elif 'text' in element:
+            blf.size(font_id, text_size)
+            blf.position(font_id, left_offset, document_offset, 0)
+            blf.draw(font_id, element["text"])
+            left_offset += blf.dimensions(font_id, element["text"])[0]
+
+            if left_offset > left_margin + wrap_width:
+                end_line()
+                
 
         else:
             raise ValueError('Unknown element type')
         
-    flush_text()
-    blf.size(font_id, text_size)
-    left_offset = left_margin
-    blf.position(font_id, left_offset, document_offset, 0)
+    end_line()
+        
+    # flush_text()
+    # blf.size(font_id, text_size)
+    # left_offset = left_margin
+    # blf.position(font_id, left_offset, document_offset, 0)
 
-    blf.draw(font_id, f'one ') 
-    left_offset += blf.dimensions(font_id, 'one ')[0]
+    # blf.draw(font_id, f'one ') 
+    # left_offset += blf.dimensions(font_id, 'one ')[0]
 
-    blf.position(font_id, left_offset, document_offset, 0)
-    blf.draw(font_id, f'two ')
-    left_offset += blf.dimensions(font_id, 'two ')[0]
+    # blf.position(font_id, left_offset, document_offset, 0)
+    # blf.draw(font_id, f'two ')
+    # left_offset += blf.dimensions(font_id, 'two ')[0]
 
-    blf.position(font_id, left_offset, document_offset, 0)
-    blf.draw(font_id, f'three ')
-    left_offset += blf.dimensions(font_id, 'three ')[0]
-
-
+    # blf.position(font_id, left_offset, document_offset, 0)
+    # blf.draw(font_id, f'three ')
+    # left_offset += blf.dimensions(font_id, 'three ')[0]
 
 #
 # register
