@@ -455,7 +455,7 @@ line_height_ratio = 1.75
 header_size = 54.0
 text_size = 22.0
 left_margin = 100
-wrap_width = 500
+wrap_width = 750
 
 blf.size(font_id, text_size)
 line_height = blf.dimensions(font_id, 'A')[1] * line_height_ratio
@@ -588,11 +588,23 @@ def browser2_drawer(self, context):
         elif 'text' in element:
             blf.size(font_id, text_size)
             blf.position(font_id, left_offset, document_offset, 0)
-            blf.draw(font_id, element["text"])
-            left_offset += blf.dimensions(font_id, element["text"])[0]
 
-            if left_offset > left_margin + wrap_width:
-                end_line()
+            text_chunks = element['text'].split(' ')
+            last_chunk_index = len(text_chunks) - 1
+            for n, chunk in enumerate(text_chunks):
+                text_to_draw = chunk + (' ' if n < last_chunk_index else '')
+                width = blf.dimensions(font_id, text_to_draw)[0]
+                print(f'chunk :: "{text_to_draw}" | width: {width} | left_offset: {left_offset} | document_offset: {document_offset}')
+                if left_offset + width > left_margin + wrap_width:
+                    print(f'wrap  :: {left_offset} + {width} > {left_margin + wrap_width}')
+                    end_line()
+                
+                blf.position(font_id, left_offset, document_offset, 0)
+
+                blf.draw(font_id, text_to_draw)
+                left_offset += width
+
+            # print(f'text :: {element["text"]} | left_offset: {left_offset} | document_offset: {document_offset}')
                 
 
         else:
