@@ -329,6 +329,23 @@ class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
         
         print(f'scrolling down {text_scroll_offset}')
         return {'FINISHED'}
+    
+class MP_ON_CLICK(bpy.types.Operator):
+    """Operator to handle clicks on the browser"""
+    bl_idname = 'music_player.on_click'
+    bl_label = 'On Click'
+    bl_description = 'Handle click events in the browser'
+
+    def invoke(self, context, event) -> Set[str]:
+        # This is a placeholder for handling clicks
+        # print('MP_ON_CLICK executed')
+        # print(context)
+        # for name in dir(event):
+        #     if not name.startswith('_'):
+        #         print(f'{name}: {getattr(event, name)}')
+        print(f'Event type: {event.type}, value: {event.value}, mouse position: ({event.mouse_x}, {event.mouse_y})')
+        print(f'Context window: {context.window.x}, {context.window.y}, size: {context.window.width}x{context.window.height}')
+        return {'FINISHED'}
 
 #
 # handlers
@@ -621,7 +638,8 @@ classes = [
     MP_OP_stop, 
     MP_OT_fullscreen,
     MP_TEXT_SCROLL_UP,
-    MP_TEXT_SCROLL_DOWN
+    MP_TEXT_SCROLL_DOWN,
+    MP_ON_CLICK
 ]
 load_post_handlers = [init_3d_viewport, init_filebrowser, init_visualizer]
 draw_handlers_fb: List[Callable] = []

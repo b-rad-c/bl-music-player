@@ -18,7 +18,7 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 import bpy
-from music_player.ops import MP_TEXT_SCROLL_UP, MP_TEXT_SCROLL_DOWN
+from music_player.ops import MP_TEXT_SCROLL_UP, MP_TEXT_SCROLL_DOWN, MP_ON_CLICK
 from music_player.ops import MP_OT_fullscreen
 
 
@@ -33,6 +33,9 @@ def remove_default_keymaps():
             for kmi in km.keymap_items:
                 if kmi.type in ['WHEELINMOUSE', 'WHEELOUTMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE']:
                     print(f'    removed {km.name} - {kmi.idname} - {kmi.type} {kmi.value} ({kmi.active})')
+                    km.keymap_items.remove(kmi)
+                elif '3d' in km.name.lower() and kmi.type in ['LEFTMOUSE', 'RIGHTMOUSE', 'MIDDLEMOUSE', 'MOUSEMOVE', 'INBETWEEN_MOUSEMOVE']:
+                    print(f'    >> {km.name} - {kmi.idname} - {kmi.type} {kmi.value} ({kmi.active})')
                     km.keymap_items.remove(kmi)
 
 def register_keymaps():
@@ -59,6 +62,21 @@ def register_keymaps():
             keymap.keymap_items.new(
                 MP_TEXT_SCROLL_DOWN.bl_idname, value='ANY', type='WHEELUPMOUSE', head=True
             ),
+            keymap.keymap_items.new(
+                MP_ON_CLICK.bl_idname, value='PRESS', type='LEFTMOUSE', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_ON_CLICK.bl_idname, value='PRESS', type='RIGHTMOUSE', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_ON_CLICK.bl_idname, value='PRESS', type='MIDDLEMOUSE', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_ON_CLICK.bl_idname, value='PRESS', type='INBETWEEN_MOUSEMOVE', head=True
+            ),
+            keymap.keymap_items.new(
+                MP_ON_CLICK.bl_idname, value='PRESS', type='MOUSEMOVE', head=True
+            )
         ]
     )
 
