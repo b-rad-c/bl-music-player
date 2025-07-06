@@ -489,7 +489,9 @@ class MP_ON_CLICK(bpy.types.Operator):
         mouse_y = event.mouse_y - context.area.y
         print(f'Mouse position (with offset): ({mouse_x}, {mouse_y})')
 
-        # breakpoint()
+        # breakpoint() 
+        global app
+        global browser_doc
 
         for box in click_boxes:
             print(f'Click box: {box}')
@@ -499,7 +501,12 @@ class MP_ON_CLICK(bpy.types.Operator):
                 
                 if box['type'] == 'button':
                     print(f'\tButton clicked: {box["element"]["text"]}')
-                    
+                    lingo_execute(app, box['element']['button'])
+                    browser_doc = render_output(lingo_update_state(app))
+                    print('browser_doc updated ', app.state)
+                    for area in context.screen.areas:
+                        area.tag_redraw()
+    
                 elif box['type'] == 'link':
                     print(f'\tLink clicked: {box["element"]["link"]}')
 
@@ -573,6 +580,8 @@ def browser2_debug_drawer(self, context):
 def browser2_drawer(self, context):
     """"""
     global click_boxes
+    global app
+    global browser_doc
     click_boxes = []
 
     document_offset = text_scroll_offset
