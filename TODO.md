@@ -20,3 +20,16 @@
     * 🔴 additional materials
         * 🔴 wood 
         * 🔴 metalic
+* 🔴 browser2.0
+    * 🔴 modal operator for hover effects
+    * 🔴 buttons
+        * 🔴 run defined op
+        * 🔴 add geomotry background
+    * 🔴 link
+        * 🔴 style
+        * 🔴 open link in browser
+    * 🔴 input
+        * 🔴 text input
+            * 🔴 add geometry background
+            * 🔴 update state
+            * 🔴 draw text on screen
