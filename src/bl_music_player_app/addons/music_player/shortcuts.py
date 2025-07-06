@@ -25,13 +25,23 @@ from music_player.ops import MP_OT_fullscreen
 addon_keymaps = []
 keymap = None
 
+def remove_default_keymaps():
+    keys = bpy.context.window_manager.keyconfigs
+
+    for key, value in keys.items():
+        for km in value.keymaps:
+            for kmi in km.keymap_items:
+                if kmi.type in ['WHEELINMOUSE', 'WHEELOUTMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE']:
+                    print(f'    removed {km.name} - {kmi.idname} - {kmi.type} {kmi.value} ({kmi.active})')
+                    km.keymap_items.remove(kmi)
+
 def register_keymaps():
     global addon_keymaps
     global keymap
 
     bpy.context.preferences.use_preferences_save = False
     keymap = bpy.context.window_manager.keyconfigs.addon.keymaps.new(name='Screen', space_type='EMPTY', region_type='WINDOW')
-   
+
     addon_keymaps.extend(
         [
             keymap.keymap_items.new(
@@ -41,13 +51,13 @@ def register_keymaps():
                 MP_TEXT_SCROLL_UP.bl_idname, value='PRESS', type='UP_ARROW', head=True
             ),
             keymap.keymap_items.new(
-                MP_TEXT_SCROLL_UP.bl_idname, value='ANY', type='WHEELUPMOUSE', head=True
+                MP_TEXT_SCROLL_UP.bl_idname, value='ANY', type='WHEELDOWNMOUSE', head=True
             ),
             keymap.keymap_items.new(
                 MP_TEXT_SCROLL_DOWN.bl_idname, value='PRESS', type='DOWN_ARROW', head=True
             ),
             keymap.keymap_items.new(
-                MP_TEXT_SCROLL_DOWN.bl_idname, value='ANY', type='WHEELDOWNMOUSE', head=True
+                MP_TEXT_SCROLL_DOWN.bl_idname, value='ANY', type='WHEELUPMOUSE', head=True
             ),
         ]
     )
@@ -56,6 +66,7 @@ def register_keymaps():
 
 def register():
     if not bpy.app.background:
+        remove_default_keymaps()
         register_keymaps()
 
 
