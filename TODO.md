@@ -22,6 +22,7 @@
         * 🔴 metalic
 * 🔴 browser2.0
     * 🔴 modal operator for hover effects
+        https://blender.stackexchange.com/a/16143/156811
     * 🔴 buttons
         * 🔴 run defined op
         * 🔴 add geomotry background

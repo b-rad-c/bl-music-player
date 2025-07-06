@@ -25,6 +25,8 @@ from typing import Optional, List, Callable, Set
 
 import blf
 import bpy
+import gpu
+from gpu_extras.batch import batch_for_shader
 
 from bpy.app.handlers import persistent
 from music_player import util, config
@@ -426,6 +428,8 @@ header_size = 54.0
 text_size = 22.0
 left_margin = 100
 wrap_width = 750
+button_padding = 6
+button_color = (0.5, 0.5, 0.5, 1.0)
 
 blf.size(font_id, text_size)
 line_height = blf.dimensions(font_id, 'A')[1] * line_height_ratio
@@ -607,18 +611,45 @@ def browser2_drawer(self, context):
             end_line()
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
-            text = 'button :: ' + element['text']
-            blf.draw(font_id, text)
+
+            # get drawing dimensions of text
+
+            text = element['text']
             dimensions = blf.dimensions(font_id, text)
 
-            click_boxes.append({
+            box = {
                 'type': 'button',
                 'element': element,
                 'left': left_margin,
                 'top': document_offset,
                 'right': left_margin + dimensions[0],
                 'bottom': document_offset + dimensions[1],
-            })
+                'hovered': False,
+                'clicked': False
+            }
+            click_boxes.append(box)
+
+            #  create button vertices
+
+            vertices = (
+                (box['left'] - button_padding, box['top'] - button_padding), 
+                (box['right'] + button_padding, box['top'] - button_padding),
+                (box['left'] - button_padding, box['bottom'] + button_padding), 
+                (box['right'] + button_padding, box['bottom'] + button_padding)
+            )
+
+            indices = (
+                (0, 1, 2), (2, 1, 3))
+
+            shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+            batch = batch_for_shader(shader, 'TRIS', {'pos': vertices}, indices=indices)
+
+            shader.uniform_float('color', button_color)
+            batch.draw(shader)
+
+
+            # draw the button text
+            blf.draw(font_id, text)
 
             document_offset -= line_height
 
