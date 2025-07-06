@@ -299,54 +299,6 @@ class MP_OT_fullscreen(bpy.types.Operator):
                 is_fullscreen = True
                 return {'FINISHED'}
 
-
-class MP_TEXT_SCROLL_UP(bpy.types.Operator):
-
-    bl_idname = 'music_player.text_scroll_up'
-    bl_label = 'Scroll up'
-    bl_description = 'Scroll text up'
-
-    def execute(self, context) -> Set[str]:
-        global text_scroll_offset
-        text_scroll_offset += text_scroll_increment
-        for area in context.screen.areas:
-            area.tag_redraw()
-        print(f'scrolling up: {text_scroll_offset}')
-        return {'FINISHED'}
-
-
-class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
-
-    bl_idname = 'music_player.text_scroll_down'
-    bl_label = 'Scroll down'
-    bl_description = 'Scroll text down'
-
-    def execute(self, context) -> Set[str]:
-        global text_scroll_offset
-        text_scroll_offset -= text_scroll_increment
-        for area in context.screen.areas:
-            area.tag_redraw()
-        
-        print(f'scrolling down {text_scroll_offset}')
-        return {'FINISHED'}
-    
-class MP_ON_CLICK(bpy.types.Operator):
-    """Operator to handle clicks on the browser"""
-    bl_idname = 'music_player.on_click'
-    bl_label = 'On Click'
-    bl_description = 'Handle click events in the browser'
-
-    def invoke(self, context, event) -> Set[str]:
-        # This is a placeholder for handling clicks
-        # print('MP_ON_CLICK executed')
-        # print(context)
-        # for name in dir(event):
-        #     if not name.startswith('_'):
-        #         print(f'{name}: {getattr(event, name)}')
-        print(f'Event type: {event.type}, value: {event.value}, mouse position: ({event.mouse_x}, {event.mouse_y})')
-        print(f'Context window: {context.window.x}, {context.window.y}, size: {context.window.width}x{context.window.height}')
-        return {'FINISHED'}
-
 #
 # handlers
 #
@@ -466,6 +418,7 @@ def load_page(spec_path: str) -> dict:
 spec = load_page(spec_paths[1])
 app = lingo_app(spec)
 browser_doc = render_output(lingo_update_state(app))
+click_boxes = []
 
 # style
 line_height_ratio = 1.75
@@ -476,6 +429,81 @@ wrap_width = 750
 
 blf.size(font_id, text_size)
 line_height = blf.dimensions(font_id, 'A')[1] * line_height_ratio
+
+# browser ops
+
+class MP_TEXT_SCROLL_UP(bpy.types.Operator):
+
+    bl_idname = 'music_player.text_scroll_up'
+    bl_label = 'Scroll up'
+    bl_description = 'Scroll text up'
+
+    def execute(self, context) -> Set[str]:
+        global text_scroll_offset
+        text_scroll_offset += text_scroll_increment
+        for area in context.screen.areas:
+            area.tag_redraw()
+        print(f'scrolling up: {text_scroll_offset}')
+        return {'FINISHED'}
+
+
+class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
+
+    bl_idname = 'music_player.text_scroll_down'
+    bl_label = 'Scroll down'
+    bl_description = 'Scroll text down'
+
+    def execute(self, context) -> Set[str]:
+        global text_scroll_offset
+        text_scroll_offset -= text_scroll_increment
+        for area in context.screen.areas:
+            area.tag_redraw()
+        
+        print(f'scrolling down {text_scroll_offset}')
+        return {'FINISHED'}
+    
+class MP_ON_CLICK(bpy.types.Operator):
+    """Operator to handle clicks on the browser"""
+    bl_idname = 'music_player.on_click'
+    bl_label = 'On Click'
+    bl_description = 'Handle click events in the browser'
+
+    def invoke(self, context, event) -> Set[str]:
+        # This is a placeholder for handling clicks
+        # print('MP_ON_CLICK executed')
+        # print(context)
+        # for name in dir(event):
+        #     if not name.startswith('_'):
+        #         print(f'{name}: {getattr(event, name)}')
+
+        print(f'\nEvent type: {event.type}, value: {event.value}, mouse position: ({event.mouse_x}, {event.mouse_y})')
+        print(f'Context window: {context.window.x}, {context.window.y}, size: {context.window.width}x{context.window.height}')
+        print(f'Area: type: {context.area.type} x: {context.area.x}, y: {context.area.y}, width: {context.area.width}, height: {context.area.height}')
+        print(f'Region: type: {context.region.type} x: {context.region.x}, y: {context.region.y}, size: {context.region.width}x{context.region.height}')
+        # get screen offset
+        mouse_x = event.mouse_x - context.area.x
+        mouse_y = event.mouse_y - context.area.y
+        print(f'Mouse position (with offset): ({mouse_x}, {mouse_y})')
+
+        # breakpoint()
+
+        for box in click_boxes:
+            print(f'Click box: {box}')
+            if (box['left'] <= mouse_x <= box['right'] and
+                box['top'] <= mouse_y <= box['bottom']):
+                print(f'Clicked on {box["type"]} element: {box["element"]}')
+                
+                if box['type'] == 'button':
+                    print(f'\tButton clicked: {box["element"]["text"]}')
+                    
+                elif box['type'] == 'link':
+                    print(f'\tLink clicked: {box["element"]["link"]}')
+
+                return {'FINISHED'}
+
+
+        
+        return {'FINISHED'}
 
 
 def browser2_debug_drawer(self, context):
@@ -540,6 +568,9 @@ def browser2_debug_drawer(self, context):
 
 def browser2_drawer(self, context):
     """"""
+    global click_boxes
+    click_boxes = []
+
     document_offset = text_scroll_offset
     left_offset = left_margin
     
@@ -576,8 +607,23 @@ def browser2_drawer(self, context):
             end_line()
             blf.size(font_id, text_size)
             blf.position(font_id, left_margin, document_offset, 0)
-            blf.draw(font_id, 'button :: ' + element['text'])
+            text = 'button :: ' + element['text']
+            blf.draw(font_id, text)
+            dimensions = blf.dimensions(font_id, text)
+
+            click_boxes.append({
+                'type': 'button',
+                'element': element,
+                'left': left_margin,
+                'top': document_offset,
+                'right': left_margin + dimensions[0],
+                'bottom': document_offset + dimensions[1],
+            })
+
             document_offset -= line_height
+
+            print(f'button :: {element["text"]} | left: {left_margin} | top: {document_offset} | right: {left_margin + dimensions[0]} | bottom: {document_offset + dimensions[1]}')
+            print(f'\t{left_margin=} {document_offset=} {dimensions=}')
 
         elif 'break' in element:
             # don't use end_line bc it may insert a break
