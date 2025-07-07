@@ -1,0 +1,57 @@
+{
+    "params": {},
+    "state": {},
+    "ops": {},
+    "output": [
+        {"heading": {"text": "Credits"}, "level": 1},
+        {"heading": {"text": "BL Music Player"}, "level": 2},
+        {"block": [
+            {"text": "Made by Brad Corlett and licensed under GNU GPL 2.0, the source code is available on "},
+            {"link": "https://github.com/b-rad-c/bl-music-player", "text": "GitHub."}
+        ]},
+        {"heading": {"text": "Music"}, "level": 2},
+        {"block": [
+            {"text": "Lobo Loco - Happy Forbidden District (ID 895) "},
+            {"break": 1},
+            {"text": "    "},
+            {"link": "https://freemusicarchive.org/music/Lobo_Loco/Space_or_not_to_Space/Happy_Forbidden_District_ID_895", "text": "@ Free Music Archive"},
+            {"break": 1},
+            
+            {"text": "HoliznaCC0 - Seasons Change"},
+            {"break": 1},
+            {"text": "    "},
+            {"link": "https://freemusicarchive.org/music/holiznacc0/lo-fi-and-chill/seasons-change", "text": "@ Free Music Archive"},
+            {"break": 1},
+
+            {"text": "Ketsa - You Best Boogie"},
+            {"break": 1},
+            {"text": "    "},
+            {"link": "https://freemusicarchive.org/music/Ketsa/1000/you-best-boogie", "text": "@ Free Music Archive"},
+            {"break": 1},
+
+            {"text": "Maarten Schellekens - Jazzy Lounge"},
+            {"break": 1},
+            {"text": "    "},
+            {"link": "https://freemusicarchive.org/music/maarten-schellekens/chillout-lounge/jazzy-lounge", "text": "@ Free Music Archive"},
+            {"break": 1},
+
+            {"text": "The Moonlighters - Ballad Of A Gink"},
+            {"break": 1},
+            {"text": "    "},
+            {"link": "https://freemusicarchive.org/music/The_Moonlighters/Live_In_Baden-Baden/Ballad_Of_A_Gink", "text": "@ Free Music Archive"},
+            {"break": 1},
+
+            {"text": "Yorgos Stenos - Hammer & Violets"},
+            {"break": 1},
+            {"text": "    "},
+            {"link": "https://freemusicarchive.org/music/yorgos-stenos/suffragettes-iconoclastic-jukebox-a-collection-of-vandalised-masterpieces/hammer-violets", "text": "@ Free Music Archive"}
+        ]},
+        {"heading": {"text": "Visualizers"}, "level": 2},
+        {"block": [
+            {"text": "Arctic Wave, Broken Radio, Combo Wave were made by the author of this addon inspired by a tutorial by Kaizen available on "},
+            {"link": "https://www.youtube.com/watch?v=rSrjDgWWlWs", "text": "YouTube."},
+            {"break": 2},
+            {"text": "The equalizer was made by the author of this addon."}
+        ]}
+    ]
+}

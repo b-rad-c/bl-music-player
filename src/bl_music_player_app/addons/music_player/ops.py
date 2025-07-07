@@ -453,7 +453,7 @@ def set_browser_page(new_spec:dict) -> None:
     global browser_doc
     global text_scroll_offset
     global text_scroll_offset_default
-    
+
     text_scroll_offset = text_scroll_offset_default
     spec = new_spec
     app = lingo_app(new_spec)
@@ -484,6 +484,14 @@ def unset_browser_page() -> None:
 # style
 line_height_ratio = 1.75
 header_size = 54.0
+heading_sizes = {
+    1: 54.0,
+    2: 45.0,
+    3: 40.0,
+    4: 36.0,
+    5: 30.0,
+    6: 24.0
+}
 text_size = 22.0
 left_margin = 100
 wrap_width = 750
@@ -591,7 +599,7 @@ def browser2_debug_drawer(self, context):
 
     for n, element in enumerate(browser_doc):
         if 'heading' in element:
-            blf.size(font_id, header_size)
+            blf.size(font_id, heading_sizes[element.get('level', 1)])
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, element['heading'])
             document_offset -= line_height
@@ -657,18 +665,23 @@ def browser2_drawer(self, context):
     document_offset = text_scroll_offset
     left_offset = left_margin
     
-    def end_line():
+    def end_line() -> bool:
+        """End current line if we have one, return True if we ended a line."""
         nonlocal document_offset
         nonlocal left_offset
         
         if left_offset > left_margin:
             document_offset -= line_height
             left_offset = left_margin
+            return True
+        return False
 
     for n, element in enumerate(browser_doc):
         if 'heading' in element:
-            end_line()
-            blf.size(font_id, header_size)
+            if end_line():
+                document_offset -= line_height
+
+            blf.size(font_id, heading_sizes[element.get('level', 1)])
             blf.color(font_id, *text_color)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, element['heading'])
@@ -700,7 +713,7 @@ def browser2_drawer(self, context):
             blf.draw(font_id, display_text)
             
             # document_offset -= line_height
-            left_offset += blf.dimensions(font_id, display_text + ' ')[0]
+            left_offset += text_dimensions[0]
             
             click_boxes.append(box)
 
