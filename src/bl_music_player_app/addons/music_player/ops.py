@@ -20,6 +20,8 @@
 
 import random
 import json
+import webbrowser
+
 from pathlib import Path
 from typing import Optional, List, Callable, Set
 
@@ -405,7 +407,6 @@ font_id = 0
 # ui_scale = context.preferences.view.ui_scale
 # blf.enable(0, blf.WORD_WRAP)
 # blf.word_wrap(0, 500)
-blf.color(font_id, 1.0, 1.0, 1.0, 1.0)
 
 # documents
 spec_paths = [
@@ -429,7 +430,10 @@ text_size = 22.0
 left_margin = 100
 wrap_width = 750
 button_padding = 6
-button_color = (0.5, 0.5, 0.5, 1.0)
+button_background_color = (0.5, 0.5, 0.5, 1.0)
+link_color = (0.2, 0.6, 0.8, 1.0)
+text_color = (1.0, 1.0, 1.0, 1.0)
+button_text_color = (1.0, 1.0, 1.0, 1.0)
 
 blf.size(font_id, text_size)
 line_height = blf.dimensions(font_id, 'A')[1] * line_height_ratio
@@ -479,40 +483,41 @@ class MP_ON_CLICK(bpy.types.Operator):
         # for name in dir(event):
         #     if not name.startswith('_'):
         #         print(f'{name}: {getattr(event, name)}')
-
-        print(f'\nEvent type: {event.type}, value: {event.value}, mouse position: ({event.mouse_x}, {event.mouse_y})')
-        print(f'Context window: {context.window.x}, {context.window.y}, size: {context.window.width}x{context.window.height}')
-        print(f'Area: type: {context.area.type} x: {context.area.x}, y: {context.area.y}, width: {context.area.width}, height: {context.area.height}')
-        print(f'Region: type: {context.region.type} x: {context.region.x}, y: {context.region.y}, size: {context.region.width}x{context.region.height}')
+        
         # get screen offset
         mouse_x = event.mouse_x - context.area.x
         mouse_y = event.mouse_y - context.area.y
-        print(f'Mouse position (with offset): ({mouse_x}, {mouse_y})')
 
         # breakpoint() 
         global app
         global browser_doc
 
         for box in click_boxes:
-            print(f'Click box: {box}')
+            # print(f'Click box: {box}')
             if (box['left'] <= mouse_x <= box['right'] and
                 box['top'] <= mouse_y <= box['bottom']):
-                print(f'Clicked on {box["type"]} element: {box["element"]}')
+                print(f'\nClicked on {box["type"]} element: {box["element"]}')
                 
                 if box['type'] == 'button':
                     print(f'\tButton clicked: {box["element"]["text"]}')
                     lingo_execute(app, box['element']['button'])
                     browser_doc = render_output(lingo_update_state(app))
-                    print('browser_doc updated ', app.state)
                     for area in context.screen.areas:
-                        area.tag_redraw()
+                        if area.type == 'VIEW_3D':
+                            area.tag_redraw()
+                            break
     
                 elif box['type'] == 'link':
                     print(f'\tLink clicked: {box["element"]["link"]}')
+                    webbrowser.open_new(box['element']['link'])
 
                 return {'FINISHED'}
 
-
+        print(f'\nEvent type: {event.type}, value: {event.value}, mouse position: ({event.mouse_x}, {event.mouse_y})')
+        print(f'\tContext window: {context.window.x}, {context.window.y}, size: {context.window.width}x{context.window.height}')
+        print(f'\tArea: type: {context.area.type} x: {context.area.x}, y: {context.area.y}, width: {context.area.width}, height: {context.area.height}')
+        print(f'\tRegion: type: {context.region.type} x: {context.region.x}, y: {context.region.y}, size: {context.region.width}x{context.region.height}')
+        print(f'\tMouse position (with offset): ({mouse_x}, {mouse_y})')
         
         return {'FINISHED'}
 
@@ -599,26 +604,45 @@ def browser2_drawer(self, context):
         if 'heading' in element:
             end_line()
             blf.size(font_id, header_size)
+            blf.color(font_id, *text_color)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, element['heading'])
             document_offset -= line_height * 2
 
         elif 'link' in element:
             # end_line()
+            blf.color(font_id, *link_color)
             try:
-                display_text = f'<{element["text"]}>'
+                display_text = element["text"]
             except KeyError:
-                display_text = f'<{element["link"]}>'
-            
+                display_text = element["link"]
+
+            text_dimensions = blf.dimensions(font_id, display_text)
+
+            box = {
+                'type': 'link',
+                'element': element,
+                'left': left_offset,
+                'top': document_offset,
+                'right': left_offset + text_dimensions[0],
+                'bottom': document_offset + text_dimensions[1],
+                'hovered': False,
+                'clicked': False
+            }
+
             blf.size(font_id, text_size)
             blf.position(font_id, left_offset, document_offset, 0)
             blf.draw(font_id, display_text)
-            left_offset += blf.dimensions(font_id, display_text)[0]
+            
             # document_offset -= line_height
+            left_offset += blf.dimensions(font_id, display_text + ' ')[0]
+            
+            click_boxes.append(box)
 
         elif 'button' in element:
             end_line()
             blf.size(font_id, text_size)
+            blf.color(font_id, *button_text_color)
             blf.position(font_id, left_margin, document_offset, 0)
 
             # get drawing dimensions of text
@@ -648,12 +672,13 @@ def browser2_drawer(self, context):
             )
 
             indices = (
-                (0, 1, 2), (2, 1, 3))
+                (0, 1, 2), (2, 1, 3)
+            )
 
             shader = gpu.shader.from_builtin('UNIFORM_COLOR')
             batch = batch_for_shader(shader, 'TRIS', {'pos': vertices}, indices=indices)
 
-            shader.uniform_float('color', button_color)
+            shader.uniform_float('color', button_background_color)
             batch.draw(shader)
 
 
@@ -662,8 +687,8 @@ def browser2_drawer(self, context):
 
             document_offset -= line_height
 
-            print(f'button :: {element["text"]} | left: {left_margin} | top: {document_offset} | right: {left_margin + dimensions[0]} | bottom: {document_offset + dimensions[1]}')
-            print(f'\t{left_margin=} {document_offset=} {dimensions=}')
+            # print(f'button :: {element["text"]} | left: {left_margin} | top: {document_offset} | right: {left_margin + dimensions[0]} | bottom: {document_offset + dimensions[1]}')
+            # print(f'\t{left_margin=} {document_offset=} {dimensions=}')
 
         elif 'break' in element:
             # don't use end_line bc it may insert a break
@@ -681,12 +706,14 @@ def browser2_drawer(self, context):
             field_type = app.spec['state'][state_field_name]['type']
             
             blf.size(font_id, text_size)
+            blf.color(font_id, *text_color)
             blf.position(font_id, left_margin, document_offset, 0)
             blf.draw(font_id, f'input :: {state_field_name} ({field_type})')
             document_offset -= line_height
 
         elif 'text' in element:
             blf.size(font_id, text_size)
+            blf.color(font_id, *text_color)
             blf.position(font_id, left_offset, document_offset, 0)
 
             text_chunks = element['text'].split(' ')
@@ -694,9 +721,9 @@ def browser2_drawer(self, context):
             for n, chunk in enumerate(text_chunks):
                 text_to_draw = chunk + (' ' if n < last_chunk_index else '')
                 width = blf.dimensions(font_id, text_to_draw)[0]
-                print(f'chunk :: "{text_to_draw}" | width: {width} | left_offset: {left_offset} | document_offset: {document_offset}')
+                # print(f'chunk :: "{text_to_draw}" | width: {width} | left_offset: {left_offset} | document_offset: {document_offset}')
                 if left_offset + width > left_margin + wrap_width:
-                    print(f'wrap  :: {left_offset} + {width} > {left_margin + wrap_width}')
+                    # print(f'wrap  :: {left_offset} + {width} > {left_margin + wrap_width}')
                     end_line()
                 
                 blf.position(font_id, left_offset, document_offset, 0)
