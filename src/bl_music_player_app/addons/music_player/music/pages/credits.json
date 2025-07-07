@@ -52,6 +52,18 @@
             {"link": "https://www.youtube.com/watch?v=rSrjDgWWlWs", "text": "YouTube."},
             {"break": 2},
             {"text": "The equalizer was made by the author of this addon."}
+        ]},
+        {"heading": {"text": "Code"}, "level": 2},
+        {"block": [
+            {"link": "https://projects.blender.org/blender/blender.git", "text": "Blender"},
+            {"break": 1},
+            {"link": "https://github.com/medium-tech/mspec", "text": "mspec"},
+            {"break": 1},
+            {"link": "https://pypi.org/project/bpy", "text": "bpy"},
+            {"break": 1},
+            {"link": "https://pypi.org/project/numpy", "text": "numpy"},
+            {"break": 1},
+            {"link": "https://pypi.org/project/blenv", "text": "blenv"}
         ]}
     ]
 }

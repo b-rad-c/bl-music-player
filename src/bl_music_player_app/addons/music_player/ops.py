@@ -134,11 +134,15 @@ class MP_OP_set_arctic_wave(bpy.types.Operator):
     bl_description = 'Changes the visualizer to Arctic Wave'
 
     def execute(self, context) -> Set[str]:
+        global app
         context.scene.active_visualizer = 'arctic_wave'
 
         show_collectons(context, eq=False, wave=True)
 
-        context.scene.camera = bpy.data.objects['Camera']
+        if app is None:
+            context.scene.camera = bpy.data.objects['wave cam - main']
+        else:
+            context.scene.camera = bpy.data.objects['wave cam - side']
 
         # bpy.data.collections['wave'].hide_viewport = False
         # bpy.data.collections['wave'].hide_render = False
@@ -162,7 +166,10 @@ class MP_OP_set_broken_radio(bpy.types.Operator):
 
         show_collectons(context, eq=False, wave=True)
 
-        context.scene.camera = bpy.data.objects['Camera']
+        if app is None:
+            context.scene.camera = bpy.data.objects['wave cam - main']
+        else:
+            context.scene.camera = bpy.data.objects['wave cam - side']
 
         context.scene.objects['wave 1'].hide_viewport = True
         context.scene.objects['wave 1'].hide_render = True
@@ -183,7 +190,10 @@ class MP_OP_set_combo_wave(bpy.types.Operator):
 
         show_collectons(context, eq=False, wave=True)
 
-        context.scene.camera = bpy.data.objects['Camera']
+        if app is None:
+            context.scene.camera = bpy.data.objects['wave cam - main']
+        else:
+            context.scene.camera = bpy.data.objects['wave cam - side']
 
         context.scene.objects['wave 1'].hide_viewport = False
         context.scene.objects['wave 1'].hide_render = False
@@ -436,9 +446,6 @@ spec_paths = [
     sample_spec_dir / 'hello-world-page.json',
     sample_spec_dir / 'test-page.json',
 ]
-def load_page(spec_path: str) -> dict:
-    with open(spec_path) as f:
-        return json.load(f)
 
 # state
 spec = None
@@ -458,6 +465,8 @@ def set_browser_page(new_spec:dict) -> None:
     spec = new_spec
     app = lingo_app(new_spec)
     browser_doc = render_output(lingo_update_state(app))
+
+    bpy.ops.music_player.set_arctic_wave()
 
 def load_browser_page(spec_path: str) -> None:
     """Load a browser page from the given spec path."""

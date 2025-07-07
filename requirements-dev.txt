@@ -1,2 +1,0 @@
-fake-bpy-module-latest
-blenv
