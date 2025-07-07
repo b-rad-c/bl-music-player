@@ -21,8 +21,8 @@ class MP_TOPBAR_MT_browser_menu(bpy.types.Menu):
     def draw(self, _) -> None:
         layout: bpy.types.UILayout = self.layout
         column = layout.column(align=True)
-        column.operator('music_player.text_scroll_up', icon='FULLSCREEN_ENTER')
-        column.operator('music_player.text_scroll_down', icon='FULLSCREEN_ENTER')
+        column.operator('music_player.text_scroll_up', icon='SORT_DESC')
+        column.operator('music_player.text_scroll_down', icon='SORT_ASC')
 
 
 class MP_TOPBAR_MT_player_menu(bpy.types.Menu):

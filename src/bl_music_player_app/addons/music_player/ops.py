@@ -53,7 +53,8 @@ changing_fullscreen = False
 
 active_file = None
 
-text_scroll_offset = 1000
+text_scroll_offset_default = 1000
+text_scroll_offset = text_scroll_offset_default
 text_scroll_increment = 50
 visualizers = [
     {'id': 'arctic_wave', 'label': 'Arctic Wave'},
@@ -362,10 +363,11 @@ def init_filebrowser(_):
     #     print(f'subscribed to active_file changes: {fb}')
     print('\t-> done')
 
+first_run_detect_filename_change = True
+
 @persistent
 def detect_filename_change(_):
     """this is run each time the filebrowser is redrawn, so we can check if the active file has changed"""
-
     global changing_fullscreen
 
     # if we are in filebrowser
@@ -377,6 +379,7 @@ def detect_filename_change(_):
             global active_filename
             global active_directory
             global previous_directory
+            global first_run_detect_filename_change
 
             active_filename = bpy.context.active_file.relative_path
 
@@ -386,11 +389,31 @@ def detect_filename_change(_):
             active_directory = Path(bpy.path.abspath(params.directory.decode('utf-8')))
             previous_filename = active_filename
             
-            audio_path = active_directory / active_filename
+            selected_path = active_directory / active_filename
+            ext = selected_path.suffix.lower()
 
-            if audio_path.suffix.lower() in ['.wav', '.mp3', '.aac']:
+            if first_run_detect_filename_change:
+                previous_filename = bpy.context.active_file.relative_path
+                first_run_detect_filename_change = False
+                print('detect_filename_change() - first run, setting previous_filename:', previous_filename)
+
+            elif ext in ['.wav', '.mp3', '.aac']:
                 bpy.ops.music_player.stop()
-                bpy.ops.music_player.play(sound_path=audio_path.as_posix())
+                print('detect_filename_change() - playing new audio file:', selected_path)
+                bpy.ops.music_player.play(sound_path=selected_path.as_posix())
+            
+            elif ext == '.json':
+                print('detect_filename_change() - loading new browser page:', selected_path)
+                load_browser_page(selected_path.as_posix())
+                for area in bpy.context.screen.areas:
+                    if area.type == 'VIEW_3D':
+                        area.tag_redraw()
+                        break
+
+            else:
+                print('detect_filename_change() - not an audio file:', selected_path)
+                # bpy.ops.music_player.stop()
+                # active_filename = None
 
     else:
         print('detect_filename_change() - not active file or reverting fullscreen')
@@ -418,10 +441,45 @@ def load_page(spec_path: str) -> dict:
         return json.load(f)
 
 # state
-spec = load_page(spec_paths[1])
-app = lingo_app(spec)
-browser_doc = render_output(lingo_update_state(app))
+spec = None
+app = None
+browser_doc = None
 click_boxes = []
+
+def set_browser_page(new_spec:dict) -> None:
+    """Set the browser page to the given spec."""
+    global spec
+    global app
+    global browser_doc
+    global text_scroll_offset
+    global text_scroll_offset_default
+    
+    text_scroll_offset = text_scroll_offset_default
+    spec = new_spec
+    app = lingo_app(new_spec)
+    browser_doc = render_output(lingo_update_state(app))
+
+def load_browser_page(spec_path: str) -> None:
+    """Load a browser page from the given spec path."""
+    global spec
+    global app
+    global browser_doc
+
+    with open(spec_path) as f:
+        spec = json.load(f)
+
+    set_browser_page(spec)
+
+def unset_browser_page() -> None:
+    """Unset the browser page."""
+    global spec
+    global app
+    global browser_doc
+    spec = None
+    app = None
+    browser_doc = None
+
+#load_browser_page(spec_paths[1])
 
 # style
 line_height_ratio = 1.75
@@ -450,8 +508,10 @@ class MP_TEXT_SCROLL_UP(bpy.types.Operator):
         global text_scroll_offset
         text_scroll_offset += text_scroll_increment
         for area in context.screen.areas:
-            area.tag_redraw()
-        print(f'scrolling up: {text_scroll_offset}')
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+                break
+        # print(f'scrolling up: {text_scroll_offset}')
         return {'FINISHED'}
 
 
@@ -465,9 +525,11 @@ class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
         global text_scroll_offset
         text_scroll_offset -= text_scroll_increment
         for area in context.screen.areas:
-            area.tag_redraw()
-        
-        print(f'scrolling down {text_scroll_offset}')
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+                break
+
+        # print(f'scrolling down {text_scroll_offset}')
         return {'FINISHED'}
     
 class MP_ON_CLICK(bpy.types.Operator):
@@ -587,8 +649,11 @@ def browser2_drawer(self, context):
     global click_boxes
     global app
     global browser_doc
-    click_boxes = []
 
+    if app is None:
+        return
+
+    click_boxes = []
     document_offset = text_scroll_offset
     left_offset = left_margin
     

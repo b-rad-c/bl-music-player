@@ -1,0 +1,90 @@
+{
+
+    "params": {
+        "first_visit": {"type": "bool", "default": false}
+    },
+
+    "state": {
+        "greeting": {
+            "type": "str",
+            "default": "",
+            "calc": {
+                "branch": [
+                    {"if": {"params": {"first_visit": {}}}, "then": "Welcome in, "},
+                    {"else": "Welcome back, "}
+                ]
+            }
+        },
+        "n": {
+            "type": "int",
+            "default": 0
+        },
+        "name": {
+            "type": "str",
+            "default": ""
+        }
+    },
+
+    "ops": {
+        "randomize_number": {
+            "args": {"max": {"type": "int"}},
+            "func":{
+                "set": {"state": {"n": {}}},
+                "to": {"call": "random.randint", "args": {"a": 0, "b": {"args": "max"}}}
+            }
+        }
+    },
+
+    "output": [
+        {"heading": {"text": "Example document"}, "level": 1},
+        {"block": [
+            {"text": "The current date and time is "},
+            {"lingo": {"call": "datetime.now"}},
+            {"text": "."},
+            {"break": 1},
+
+            {"text": "Please tell us your name: "},
+            {"input": {"type": "text"}, "bind": {"state": {"name": {}}}},
+            {"break": 1},
+
+            {"text": "Here's a random number: "},
+            {"lingo": {"state": {"n": {}}}},
+            {"text": "."},
+            {"break": 1},
+            
+            {"button": {"op": {"randomize_number": {"max": 100}}}, "text": "Randomize"},
+            {"break": 1},
+
+            {"lingo": {"state": {"greeting": {}}}},
+            {"branch": [
+                {"if": {"call": "ne", "args": {"a": {"state": {"name": {}}}, "b": ""}}, "then": {"lingo": {"state": {"name": {}}}}},
+                {"else": {"text": "Unknown person"}}
+            ]},
+            {"text": "!"},
+            {"break": 2},
+
+            {"text": "Happy "},
+
+            {"switch": {
+                "expression": {"call": "current.weekday"},
+                "cases": [
+                    {"case": 0, "then": {"text": "Monday"}},
+                    {"case": 1, "then": {"text": "Tuesday"}},
+                    {"case": 2, "then": {"text": "Wednesday"}},
+                    {"case": 3, "then": {"text": "Thursday"}},
+                    {"case": 4, "then": {"text": "Friday"}}
+                ],
+                "default": {"text": "Weekend"}
+            }},
+
+            {"text": "!"},
+            {"break": 1},
+
+            {"text": "This is the culmination of many late nights. "},
+            {"link": "https://shop.coavacoffee.com/cdn/shop/files/RayosDelSol_Retail_drip_1_680x@2x.png?v=1718728683", "text": "coffee, yum, yum"},
+            {"text": ", well anyway, enjoy! "},
+            {"link": "https://miro.medium.com/v2/resize:fit:1152/format:webp/1*Cvj9qvbKh1LmLSGEwwwZCQ.jpeg"}
+        ]}
+    ]
+
+}
