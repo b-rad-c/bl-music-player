@@ -178,7 +178,7 @@ def samples_from_mic(threshold=.001, decay=.5, sample_rate=30):
         '-loglevel', 'quiet',  # suppress ffmpeg logging unless actively debugging
         '-f', 'avfoundation',
         '-i', ':2',
-        '-f', 'u24le',
+        '-f', 's16le',
         '-ac', '1',
         #'-c:a', 'pcm_u24le', 
         '-ar', f'{sample_rate}',
@@ -191,32 +191,35 @@ def samples_from_mic(threshold=.001, decay=.5, sample_rate=30):
     print(f'process started with PID: {process.pid}')
     print(f'Starting recording with args: {process.args}')
 
-    
+    max_value = 2 ** 16  # 2^16 - 1, for 16-bit audio
+    increment = 1 / max_value
 
     try:
         
         while process.poll() is None:
             # print('Reading from ffmpeg...')
 
-            buffer = process.stdout.read(3)
+            buffer = process.stdout.read(2)
             
             if buffer:
-                value = int.from_bytes(buffer, 'little', signed=False)
-                volume = value / 16777215
-                real_volume = abs(.5 - volume)
+                raw = int.from_bytes(buffer, 'little', signed=True)
+                value = raw * increment  # convert to float in range [0, 1]
+                print(f'raw: {raw:8d} value: {value:.6f}')
+                # volume = value / 16777215
+                # real_volume = abs(.5 - volume)
 
-                if real_volume > threshold:
-                    print(f'A1: {value:<10} {volume:<10} {real_volume:<10}')
-                    decaying = True
+                # if real_volume > threshold:
+                #     print(f'A1: {value:<10} {volume:<10} {real_volume:<10}')
+                #     decaying = True
 
-                elif decaying:
-                    print(f'A2: {value:<10} {volume:<10} {real_volume:<10}')
-                    current_decay += 1
-                    if current_decay > decay_threshold:
-                        decaying = False
-                        current_decay = 0
-                else:
-                    print(f'__: {value:<10} {volume:<10} {real_volume:<10}')
+                # elif decaying:
+                #     print(f'A2: {value:<10} {volume:<10} {real_volume:<10}')
+                #     current_decay += 1
+                #     if current_decay > decay_threshold:
+                #         decaying = False
+                #         current_decay = 0
+                # else:
+                #     print(f'__: {value:<10} {volume:<10} {real_volume:<10}')
 
             else:
                 print('No more data from ffmpeg, exiting.')
