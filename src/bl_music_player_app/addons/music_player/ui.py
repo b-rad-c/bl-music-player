@@ -41,6 +41,10 @@ class MP_TOPBAR_MT_visualizer_menu(bpy.types.Menu):
     def draw(self, context) -> None:
         row = self.layout.column(align=True)
 
+        row.operator('music_player.sync_to_microphone', text='Sync to microphone', icon='REC')
+        row.operator('music_player.sync_debug', text='Sync Debug', icon='BLANK1')
+        row.separator()
+
         row.operator('music_player.randomize_visualizer', text='Randomize visualizer', icon='BLANK1')
         row.separator()
 

@@ -31,7 +31,8 @@ import gpu
 from gpu_extras.batch import batch_for_shader
 
 from bpy.app.handlers import persistent
-from music_player import util, config
+from music_player import util
+from music_player import config
 from mspec import sample_spec_dir
 from mspec.markup import lingo_app, render_output, lingo_execute, lingo_update_state
 
@@ -103,6 +104,37 @@ def dump(context, full=False):
 #
 # visualizer ops
 #
+
+class MP_OP_sync_to_microphone(bpy.types.Operator):
+
+    bl_idname = 'music_player.sync_to_microphone'
+    bl_label = 'Sync to Microphone'
+    bl_description = 'Sync the visualizer to the microphone input.'
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        bpy.ops.screen.animation_cancel()
+        print('Syncing visualizer to microphone input...')
+
+        util.samples_from_mic()
+
+        print('Ending sync to microphone input.')
+
+        return {'FINISHED'}
+    
+class MP_OP_sync_debug(bpy.types.Operator):
+    bl_idname = 'music_player.sync_debug'
+    bl_label = 'Sync Debug'
+    bl_description = 'Debugging operator to sync visualizer to microphone input.'
+
+    def execute(self, context: bpy.types.Context) -> Set[str]:
+        print('Debugging visualizer sync to microphone input...')
+
+        for device in util.list_devices():
+            print(f'Available device: {device}')
+
+        print('Default input device:', util.get_default_input())
+        return {'FINISHED'}
+
 
 class MP_OP_randomize_visualizer(bpy.types.Operator):
 
@@ -513,7 +545,9 @@ button_text_color = (1.0, 1.0, 1.0, 1.0)
 blf.size(font_id, text_size)
 line_height = blf.dimensions(font_id, 'A')[1] * line_height_ratio
 
+#
 # browser ops
+#
 
 class MP_TEXT_SCROLL_UP(bpy.types.Operator):
 
@@ -530,7 +564,6 @@ class MP_TEXT_SCROLL_UP(bpy.types.Operator):
                 break
         # print(f'scrolling up: {text_scroll_offset}')
         return {'FINISHED'}
-
 
 class MP_TEXT_SCROLL_DOWN(bpy.types.Operator):
 
@@ -600,7 +633,6 @@ class MP_ON_CLICK(bpy.types.Operator):
         
         return {'FINISHED'}
 
-
 def browser2_debug_drawer(self, context):
     """"""
     document_offset = text_scroll_offset
@@ -659,7 +691,6 @@ def browser2_debug_drawer(self, context):
 
         else:
             raise ValueError('Unknown element type')
-
 
 def browser2_drawer(self, context):
     """"""
@@ -829,6 +860,8 @@ def browser2_drawer(self, context):
 
 load_post_handlers = [init_3d_viewport, init_filebrowser]
 classes = [
+    MP_OP_sync_to_microphone,
+    MP_OP_sync_debug,
     MP_OP_randomize_visualizer, 
     MP_OP_set_arctic_wave,
     MP_OP_set_broken_radio,
