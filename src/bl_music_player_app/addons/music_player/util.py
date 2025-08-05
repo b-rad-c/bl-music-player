@@ -161,13 +161,10 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 # audio functions
 #
 
-def samples_from_mic(threshold=.001, decay=.5, sample_rate=30):
-
-    decay_threshold = decay * sample_rate
-    decaying = False
-    current_decay = 0
+def samples_from_mic(gain=175.0, sample_rate=30, min_level=0.05):
 
     """
+    ffmpeg -f avfoundation -list_devices true -i ""
     ffmpeg -f avfoundation -i ":2" -ac 1 -ar 441000 -t 5 mic.wav
 
     """
@@ -175,7 +172,7 @@ def samples_from_mic(threshold=.001, decay=.5, sample_rate=30):
     # ffmpeg -loglevel quiet -f avfoundation -i ":1" -f u8 -ac 1 -ar 30 -t 5 -
     args = [
         'ffmpeg',
-        '-loglevel', 'quiet',  # suppress ffmpeg logging unless actively debugging
+        '-loglevel', 'quiet',
         '-f', 'avfoundation',
         '-i', ':2',
         '-f', 's16le',
@@ -187,44 +184,29 @@ def samples_from_mic(threshold=.001, decay=.5, sample_rate=30):
     ]
     
     process = subprocess.Popen(args, stdout=subprocess.PIPE, shell=False)
-    #with subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as process:
-    print(f'process started with PID: {process.pid}')
-    print(f'Starting recording with args: {process.args}')
+    print(f'recording process started with PID: {process.pid}')
 
-    max_value = 2 ** 16  # 2^16 - 1, for 16-bit audio
+    max_value = (2 ** 16) / 2 - 1
     increment = 1 / max_value
 
     try:
         
         while process.poll() is None:
-            # print('Reading from ffmpeg...')
 
             buffer = process.stdout.read(2)
             
             if buffer:
-                raw = int.from_bytes(buffer, 'little', signed=True)
-                value = raw * increment  # convert to float in range [0, 1]
-                print(f'raw: {raw:8d} value: {value:.6f}')
-                # volume = value / 16777215
-                # real_volume = abs(.5 - volume)
-
-                # if real_volume > threshold:
-                #     print(f'A1: {value:<10} {volume:<10} {real_volume:<10}')
-                #     decaying = True
-
-                # elif decaying:
-                #     print(f'A2: {value:<10} {volume:<10} {real_volume:<10}')
-                #     current_decay += 1
-                #     if current_decay > decay_threshold:
-                #         decaying = False
-                #         current_decay = 0
-                # else:
-                #     print(f'__: {value:<10} {volume:<10} {real_volume:<10}')
+                value = (abs(int.from_bytes(buffer, 'little', signed=True)) * increment) * gain
+                if value < min_level:
+                    value = 0.0
+                elif value > 1.0:
+                    value = 1.0
+                print(f'value: {value:.5f}')
 
             else:
-                print('No more data from ffmpeg, exiting.')
+                print('no more data from ffmpeg, exiting.')
                 break
-            
+
         process.wait()
 
     except KeyboardInterrupt:
@@ -232,84 +214,14 @@ def samples_from_mic(threshold=.001, decay=.5, sample_rate=30):
         process.kill()
         process.wait()
 
-    print('Recording finished.')
-
-def detect_activity(input_device, threshold=.05, decay=.5, debug=False):
-    """
-    Detect activity on an audio device input
-        yield None if no activity over threshold
-        else yield decoded audio sample (python int from 24bit unsigned little endian)
-
-    Audio signal is processed at a sample rate of 1khz
-
-    :param input_device: str, name of input device to capture from, use list_devices to find name
-    :param threshold: float, used to determine vocal activity from background noise
-    :param decay: float, number of seconds after last detected activity to return to no activity state,
-        used to smooth out gaps between words
-    :param debug: bool, if True do not suppress ffmpeg logging, do not use unless actively debugging this will cause
-        unexpected results when detecting audio activity
-    :returns None
-    """
-    sample_rate = 1000
-    decay_threshold = decay * sample_rate
-    decaying = False
-    current_decay = 0
-
-    input_device = get_default_input() if input_device is None else input_device
-
-    args = ['ffmpeg']
-    if not debug:
-        # suppress ffmpeg logging unless actively debugging
-        args += ['-loglevel', 'quiet']
-    args += ['-f', 'alsa', '-i', input_device, '-f', 'u24le', '-ac', '1', '-ar', str(sample_rate), '-']
-
-    process = subprocess.Popen(args, stdout=subprocess.PIPE)
-
-    try:
-        while True:
-            buffer = process.stdout.read(3)
-            if buffer:
-                value = int.from_bytes(buffer, 'little', signed=False)
-                volume = value / 16777215
-                if abs(.5 - volume) > threshold:
-                    yield value
-                    decaying = True
-
-                elif decaying:
-                    yield value
-                    current_decay += 1
-                    if current_decay > decay_threshold:
-                        decaying = False
-                        current_decay = 0
-                else:
-                    yield None
-
-            else:
-                raise ValueError('ffmpeg exited early, you probably supplied an invalid device, try debug mode')
-
-    except KeyboardInterrupt:
+    except Exception as e:
+        print(f'Error occurred: {e}')
         process.kill()
+        process.wait()
+
+    print('recording finished.')
 
 
-def list_devices() -> list[str]:
-    """list available audio devices
-    :returns: string, result of running command 'arecord -L'
-    """
-    process = subprocess.Popen(['arecord', '-L'], stdout=subprocess.PIPE)
-    process.wait()
-    return process.stdout.read().decode('utf-8').splitlines()
-
-
-def get_default_input() -> str:
-    """find default device input
-    :returns: str, name of input device
-    """
-
-    for line in list_devices():
-        if line.startswith('default:'):
-            return line.strip()
-
-    raise ValueError('Could not find default input device.')
 
 
 if __name__ == '__main__':
