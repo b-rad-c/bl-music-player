@@ -18,13 +18,17 @@
 #
 # (c) 2021, Blender Foundation - Paul Golter
 
+from concurrent.futures import process
 import random
 import json
 import webbrowser
+import time 
+import subprocess
 
 from pathlib import Path
 from typing import Optional, List, Callable, Set
 
+import mido
 import blf
 import bpy
 import gpu
@@ -101,9 +105,65 @@ def dump(context, full=False):
                 else:
                     print(f'{attr} = {getattr(context, attr)}')
 
+
+#
+# midi
+#
+
+midi_port:mido.ports.BasePort = None
+
+def redraw_hack():
+    # trick to update the GUI
+    for window in bpy.context.window_manager.windows:
+        screen = window.screen
+        for area in screen.areas:
+            if area.type == 'VIEW_3D':
+                area.tag_redraw()
+
+def on_incoming_midi_msg(msg:mido.Message):
+    value = msg.value / 127
+    # print(f'value: {value}')
+    bpy.data.objects['audio signal - full']['signal'] = value
+    bpy.data.objects['audio signal - full'].location = (0, 0, 0)
+
+    # update dependecy graph
+    
+
+    # bpy.context.view_layer.update()
+    # redraw_hack()
+
 #
 # visualizer ops
 #
+
+# max_value = (2 ** 16) / 2 - 1
+# increment = 1 / max_value
+# min_level = 0.001
+# gain = 175.0
+
+# def handle_microphone_sample():
+#     print('handle_microphone_sample()')
+#     global ff_mic
+#     print(f'ff_mic: {ff_mic}')
+#     if ff_mic.poll() is not None:
+#         ff_mic = None
+#         return None  # process ended, stop the timer. 
+#     print('reading microphone input...')
+    
+#     buffer = ff_mic.stdout.read(2)
+
+#     print(buffer)
+
+#     if buffer:
+#         value = (abs(int.from_bytes(buffer, 'little', signed=True)) * increment) * gain
+#         if value < min_level:
+#             value = 0.0
+#         elif value > 1.0:
+#             value = 1.0
+#         print(f'mic value: {value:.5f}')
+#         bpy.data.objects['audio signal - full']['signal'] = value
+
+#     return 0
 
 class MP_OP_sync_to_microphone(bpy.types.Operator):
 
@@ -113,14 +173,37 @@ class MP_OP_sync_to_microphone(bpy.types.Operator):
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
         bpy.ops.screen.animation_cancel()
-        print('Syncing visualizer to microphone input...')
+        #bpy.ops.screen.animation_play(sync=True)
 
-        util.samples_from_mic()
+        global midi_port
+        if midi_port is None:
+            print('Syncing visualizer to microphone input...')
+            midi_port = mido.open_input(util.midi_device, callback=lambda msg: on_incoming_midi_msg(msg))
+        else:
+            midi_port.close()
+            midi_port = None
+            print('Stopped syncing visualizer to microphone input.')
 
-        print('Ending sync to microphone input.')
+        # graph_area = util.find_area(bpy.context, 'GRAPH_EDITOR')
+        # graph_context = util.get_context_for_area(graph_area)
+
+        #bpy.ops.screen.animation_play(sync=True)
+
+        #bpy.app.timers.register(handle_microphone_sample, first_interval=.1, persistent=True)
+
+        # start = time.time()
+        # with context.temp_override(**graph_context):
+        #     for sample in util.samples_from_mic():
+        #         print(sample)
+        #         bpy.data.objects['audio signal - full']['signal'] = sample
+        #         if time.time() - start > 10.0:
+        #             break
+
+        # print('Ending sync to microphone input.')
 
         return {'FINISHED'}
     
+
 class MP_OP_sync_debug(bpy.types.Operator):
     bl_idname = 'music_player.sync_debug'
     bl_label = 'Sync Debug'
@@ -461,7 +544,6 @@ def detect_filename_change(_):
         print('detect_filename_change() - not active file or reverting fullscreen')
         # active_filename = None
         # bpy.ops.music_player.stop()
-
 
 #
 # browser 2
@@ -878,6 +960,23 @@ load_post_handlers = [init_3d_viewport, init_filebrowser, init_visualizer]
 draw_handlers_fb: List[Callable] = []
 draw_handlers_spv3d: List[Callable] = []
 
+# ff_mic: Optional[subprocess.Popen] = None
+# ff_mic_gain = 175.0
+# ff_mic_sample_rate = 30
+# ff_mic_min_level = 0.05
+# ff_mic_args = [
+#     'ffmpeg',
+#     '-loglevel', 'quiet',
+#     '-f', 'avfoundation',
+#     '-i', ':2',
+#     '-f', 's16le',
+#     '-ac', '1',
+#     #'-c:a', 'pcm_u24le', 
+#     '-ar', f'{ff_mic_sample_rate}',
+#     # '-t', '30', 
+#     '-'
+# ]
+
 def register():
 
     for cls in classes:
@@ -893,6 +992,11 @@ def register():
     draw_handlers_spv3d.append(
         bpy.types.SpaceView3D.draw_handler_add(browser2_drawer, (None, None), 'WINDOW', 'POST_PIXEL')
     )
+
+    # ffmpeg mic integration
+    # global ff_mic
+    # ff_mic = subprocess.Popen(ff_mic_args, stdout=subprocess.PIPE, shell=False)
+    # print(f'recording process started with PID: {ff_mic.pid}')
 
 
 def unregister():

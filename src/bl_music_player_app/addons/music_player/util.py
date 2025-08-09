@@ -21,7 +21,7 @@
 import subprocess
 from typing import Dict, Optional, Tuple
 import bpy
-import time
+import mido
 
 #
 # area functions
@@ -161,7 +161,9 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 # audio functions
 #
 
-def samples_from_mic(gain=175.0, sample_rate=30, min_level=0.05):
+midi_device = 'bl-music-player-midi'
+
+def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001):
 
     """
     ffmpeg -f avfoundation -list_devices true -i ""
@@ -184,7 +186,7 @@ def samples_from_mic(gain=175.0, sample_rate=30, min_level=0.05):
     ]
     
     process = subprocess.Popen(args, stdout=subprocess.PIPE, shell=False)
-    print(f'recording process started with PID: {process.pid}')
+    print(f'mic process started with PID: {process.pid}')
 
     max_value = (2 ** 16) / 2 - 1
     increment = 1 / max_value
@@ -202,6 +204,7 @@ def samples_from_mic(gain=175.0, sample_rate=30, min_level=0.05):
                 elif value > 1.0:
                     value = 1.0
                 print(f'value: {value:.5f}')
+                yield value
 
             else:
                 print('no more data from ffmpeg, exiting.')
@@ -219,10 +222,15 @@ def samples_from_mic(gain=175.0, sample_rate=30, min_level=0.05):
         process.kill()
         process.wait()
 
-    print('recording finished.')
+    print('exiting samples_from_mic')
 
-
-
+def midi_relay():
+    port = mido.open_output(midi_device, virtual=True)
+    try:
+        for sample in samples_from_mic():
+            port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
+    finally:
+        port.close()
 
 if __name__ == '__main__':
-    samples_from_mic()
+    midi_relay()

@@ -50,9 +50,9 @@ class AppStateStore(AppOverrideState):
         bpy.types.VIEW3D_PT_overlay_guides.draw = lambda self, context: None
         bpy.types.VIEW3D_PT_view3d_lock.draw = lambda self, context: None
         bpy.types.VIEW3D_MT_view_cameras.draw = lambda self, context: None
-        for attr in dir(bpy.types):
-            if ('VIEW3D' in attr or 'view3d' in attr) and not 'tools' in attr:
-                print(attr)
+        # for attr in dir(bpy.types):
+        #     if ('VIEW3D' in attr or 'view3d' in attr) and not 'tools' in attr:
+        #         print(attr)
 
         # ta = bpy.types.SEQUENCER_PT_tools_active
         # for name in dir(ta):

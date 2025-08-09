@@ -1,4 +1,5 @@
 bpy
 numpy<2
 blenv
+mido[ports-rtmidi]
 ./deps/mspec
