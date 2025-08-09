@@ -31,7 +31,7 @@ python -m blenv setup
 To run the app template (gui):
 
 ```bash
-python -m blenv blender
+python -m blenv run
 ```
 
 Render visualizer video for an audio file:

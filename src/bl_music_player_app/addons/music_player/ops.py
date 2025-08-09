@@ -126,6 +126,18 @@ def on_incoming_midi_msg(msg:mido.Message):
     bpy.data.objects['audio signal - full']['signal'] = value
     bpy.data.objects['audio signal - full'].location = (0, 0, 0)
 
+    bpy.data.objects['audio signal - low']['signal'] = value
+    bpy.data.objects['audio signal - low'].location = (0, 0, 0)
+
+    bpy.data.objects['audio signal - low mid']['signal'] = value
+    bpy.data.objects['audio signal - low mid'].location = (0, 0, 0)
+    
+    bpy.data.objects['audio signal - high mid']['signal'] = value
+    bpy.data.objects['audio signal - high mid'].location = (0, 0, 0)
+
+    bpy.data.objects['audio signal - high']['signal'] = value
+    bpy.data.objects['audio signal - high'].location = (0, 0, 0)
+
     # update dependecy graph
     
 

@@ -203,7 +203,7 @@ def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001):
                     value = 0.0
                 elif value > 1.0:
                     value = 1.0
-                print(f'value: {value:.5f}')
+                # print(f'value: {value:.5f}')
                 yield value
 
             else:
@@ -214,6 +214,7 @@ def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001):
 
     except KeyboardInterrupt:
         print('KeyboardInterrupt detected, terminating process...')
+        yield 0.0
         process.kill()
         process.wait()
 
@@ -224,13 +225,25 @@ def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001):
 
     print('exiting samples_from_mic')
 
-def midi_relay():
+def midi_relay(gain=175.0, sample_rate=24, min_level=0.0001) -> None:
     port = mido.open_output(midi_device, virtual=True)
     try:
-        for sample in samples_from_mic():
+        for sample in samples_from_mic(gain=gain, sample_rate=sample_rate, min_level=min_level):
             port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
     finally:
         port.close()
 
 if __name__ == '__main__':
-    midi_relay()
+    import argparse
+    parser = argparse.ArgumentParser(description='MIDI Relay - run this via cli and select sync from microphone in cli')
+    parser.add_argument('--gain', '-g', type=float, default=175.0, help='Gain multiplier for microphone input')
+    parser.add_argument('--sample-rate', '-sr', type=int, default=24, help='Sample rate for microphone input')
+    parser.add_argument('--min-level', '-ml', type=float, default=0.0001, help='Minimum level threshold')
+
+    args = parser.parse_args()
+
+    midi_relay(
+        gain=args.gain,
+        sample_rate=args.sample_rate,
+        min_level=args.min_level
+    )
