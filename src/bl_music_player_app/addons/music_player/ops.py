@@ -40,8 +40,6 @@ from music_player import config
 from mspec import sample_spec_dir
 from mspec.markup import lingo_app, render_output, lingo_execute, lingo_update_state
 
-
-
 #
 # globals
 #
@@ -1025,4 +1023,6 @@ def unregister():
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
-    # bpy.msgbus.clear_by_owner(music_player_owner)
+    global midi_port
+    if midi_port is not None:
+        midi_port.close()
