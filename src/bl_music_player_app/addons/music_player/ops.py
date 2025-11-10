@@ -37,7 +37,7 @@ from gpu_extras.batch import batch_for_shader
 from bpy.app.handlers import persistent
 from music_player import util
 from music_player import config
-from mspec import sample_spec_dir
+# from mspec import sample_spec_dir
 from mspec.markup import lingo_app, render_output, lingo_execute, lingo_update_state
 
 #
@@ -566,10 +566,10 @@ font_id = 0
 # blf.word_wrap(0, 500)
 
 # documents
-spec_paths = [
-    sample_spec_dir / 'hello-world-page.json',
-    sample_spec_dir / 'test-page.json',
-]
+# spec_paths = [
+#     sample_spec_dir / 'hello-world-page.json',
+#     sample_spec_dir / 'test-page.json',
+# ]
 
 # state
 spec = None

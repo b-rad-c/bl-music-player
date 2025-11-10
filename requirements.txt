@@ -1,5 +1,5 @@
 bpy
 numpy<2
-blenv
+blenv==0.0.1b4
 mido[ports-rtmidi]
 mspec==0.0.14a0
