@@ -169,9 +169,11 @@ def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001):
     ffmpeg -f avfoundation -list_devices true -i ""
     ffmpeg -f avfoundation -i ":2" -ac 1 -ar 441000 -t 5 mic.wav
 
+    NOTE: run this is a terminal outside of VSCode
+
     """
 
-    # ffmpeg -loglevel quiet -f avfoundation -i ":1" -f u8 -ac 1 -ar 30 -t 5 -
+    # ffmpeg -loglevel quiet -f avfoundation -i ":2" -f s16le -ac 1 -ar 30 -t 5 -
     args = [
         'ffmpeg',
         '-loglevel', 'quiet',
