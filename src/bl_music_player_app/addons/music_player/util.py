@@ -183,8 +183,8 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True,
         window_size: Number of samples to use for RMS calculation (defaults to sample_rate)
     """
     
-    # Convert dB to linear gain: linear = 10^(dB/20)
-    gain = 10 ** (gain_db / 20.0)
+    # Convert dB to linear gain (divide by 10 for power, 20 for amplitude)
+    gain = 10 ** (gain_db / 10.0)
     
     # If no window_size specified, use sample_rate (1 second of samples)
     if window_size is None:
