@@ -167,7 +167,8 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
 midi_device = 'bl-music-player-midi'
 
-def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True):
+def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True, window_size=None, 
+                     smoothing=0.0, compression_threshold=0.7, compression_ratio=4.0):
     """
     ffmpeg -f avfoundation -list_devices true -i ""
     ffmpeg -f avfoundation -i ":2" -ac 1 -ar 441000 -t 5 mic.wav
@@ -180,6 +181,10 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True)
         sample_rate: Samples per second to read from microphone
         min_level: Minimum threshold below which level is set to 0
         quiet: Suppress ffmpeg output
+        window_size: Number of samples to use for RMS calculation (defaults to sample_rate)
+        smoothing: Exponential smoothing factor (0.0-1.0). 0=no smoothing, 0.5=moderate, 0.9=heavy
+        compression_threshold: Level above which compression is applied (0.0-1.0)
+        compression_ratio: Ratio of compression above threshold (1.0=none, 4.0=4:1, inf=limiting)
     """
     
     # Convert dB to linear gain (divide by 10 for power, 20 for amplitude)
@@ -206,6 +211,7 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True)
     
     # Sliding window buffer for smooth RMS calculation
     sample_buffer = []
+    smoothed_level = None  # Track smoothed level for exponential smoothing
 
     try:
         while process.poll() is None:
@@ -222,14 +228,29 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True)
                 # Apply gain
                 level = rms * gain
                 
-                # Apply thresholding and clamping
-                if level < min_level:
-                    level = 0.0
-                elif level > 1.0:
-                    level = 1.0
+                # Apply compression if level exceeds threshold
+                if compression_ratio > 1.0 and level > compression_threshold:
+                    # Amount over threshold
+                    over = level - compression_threshold
+                    # Compress the overage
+                    compressed_over = over / compression_ratio
+                    # Final level is threshold + compressed overage
+                    level = compression_threshold + compressed_over
                 
-                print(f'level: {level:.5f}')
-                yield level
+                # Apply exponential smoothing
+                if smoothed_level is None:
+                    smoothed_level = level
+                else:
+                    smoothed_level = smoothing * smoothed_level + (1 - smoothing) * level
+                
+                # Apply thresholding and clamping
+                if smoothed_level < min_level:
+                    smoothed_level = 0.0
+                elif smoothed_level > 1.0:
+                    smoothed_level = 1.0
+                
+                print(f'level: {smoothed_level:.5f}')
+                yield smoothed_level
                 
                 # Sliding window: remove oldest sample, keep the rest
                 sample_buffer.pop(0)
@@ -252,10 +273,14 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True)
 
     print('exiting samples_from_mic')
 
-def midi_relay(gain_db=46.0, sample_rate=24, min_level=0.0001) -> None:
+def midi_relay(gain_db=46.0, sample_rate=24, min_level=0.0001, window_size=None, 
+               smoothing=0.0, compression_threshold=0.7, compression_ratio=4.0) -> None:
     port = mido.open_output(midi_device, virtual=True)
     try:
-        for sample in samples_from_mic(gain_db=gain_db, sample_rate=sample_rate, min_level=min_level):
+        for sample in samples_from_mic(gain_db=gain_db, sample_rate=sample_rate, min_level=min_level, 
+                                       window_size=window_size, smoothing=smoothing, 
+                                       compression_threshold=compression_threshold, 
+                                       compression_ratio=compression_ratio):
             port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
     finally:
         port.close()
@@ -266,11 +291,19 @@ if __name__ == '__main__':
     parser.add_argument('--gain', '-g', type=float, default=25.0, help='Gain in decibels (dB). Typical range: 20-60 dB')
     parser.add_argument('--sample-rate', '-sr', type=int, default=60, help='Sample rate for microphone input')
     parser.add_argument('--min-level', '-ml', type=float, default=0.0001, help='Minimum level threshold')
+    parser.add_argument('--window-size', '-ws', type=int, default=None, help='Window size for RMS calculation (defaults to sample_rate)')
+    parser.add_argument('--smoothing', '-s', type=float, default=0.0, help='Exponential smoothing (0.0-1.0): 0=none, 0.5=moderate, 0.9=heavy')
+    parser.add_argument('--compression-threshold', '-ct', type=float, default=0.7, help='Compression threshold (0.0-1.0)')
+    parser.add_argument('--compression-ratio', '-cr', type=float, default=4.0, help='Compression ratio (1.0=none, 4.0=4:1)')
 
     args = parser.parse_args()
 
     midi_relay(
         gain_db=args.gain,
         sample_rate=args.sample_rate,
-        min_level=args.min_level
+        min_level=args.min_level,
+        window_size=args.window_size,
+        smoothing=args.smoothing,
+        compression_threshold=args.compression_threshold,
+        compression_ratio=args.compression_ratio
     )
