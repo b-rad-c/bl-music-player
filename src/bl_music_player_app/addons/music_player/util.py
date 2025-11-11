@@ -228,7 +228,7 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True)
                 elif level > 1.0:
                     level = 1.0
                 
-                # print(f'level: {level:.5f}')
+                print(f'level: {level:.5f}')
                 yield level
                 
                 # Sliding window: remove oldest sample, keep the rest
