@@ -22,6 +22,7 @@ import subprocess
 import sys
 import os
 import time
+import math
 from typing import Dict, Optional, Tuple
 import bpy
 import mido
@@ -166,13 +167,24 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
 midi_device = 'bl-music-player-midi'
 
-def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001, quiet=True, window_size=None):
+def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True, window_size=None):
     """
     ffmpeg -f avfoundation -list_devices true -i ""
     ffmpeg -f avfoundation -i ":2" -ac 1 -ar 441000 -t 5 mic.wav
 
     NOTE: run this is a terminal outside of VSCode
+    
+    Args:
+        gain_db: Gain in decibels (dB). 0 dB = no change, +6 dB = double, +20 dB = 10x
+                 Typical range: 20-60 dB for microphone input
+        sample_rate: Samples per second to read from microphone
+        min_level: Minimum threshold below which level is set to 0
+        quiet: Suppress ffmpeg output
+        window_size: Number of samples to use for RMS calculation (defaults to sample_rate)
     """
+    
+    # Convert dB to linear gain: linear = 10^(dB/20)
+    gain = 10 ** (gain_db / 20.0)
     
     # If no window_size specified, use sample_rate (1 second of samples)
     if window_size is None:
@@ -246,10 +258,10 @@ def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001, quiet=True, w
 
     print('exiting samples_from_mic')
 
-def midi_relay(gain=175.0, sample_rate=24, min_level=0.0001) -> None:
+def midi_relay(gain_db=46.0, sample_rate=24, min_level=0.0001) -> None:
     port = mido.open_output(midi_device, virtual=True)
     try:
-        for sample in samples_from_mic(gain=gain, sample_rate=sample_rate, min_level=min_level):
+        for sample in samples_from_mic(gain_db=gain_db, sample_rate=sample_rate, min_level=min_level):
             port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
     finally:
         port.close()
@@ -257,14 +269,14 @@ def midi_relay(gain=175.0, sample_rate=24, min_level=0.0001) -> None:
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='MIDI Relay - run this via cli and select sync from microphone in cli')
-    parser.add_argument('--gain', '-g', type=float, default=200.0, help='Gain multiplier for microphone input')
+    parser.add_argument('--gain', '-g', type=float, default=46.0, help='Gain in decibels (dB). Typical range: 20-60 dB')
     parser.add_argument('--sample-rate', '-sr', type=int, default=24, help='Sample rate for microphone input')
     parser.add_argument('--min-level', '-ml', type=float, default=0.0001, help='Minimum level threshold')
 
     args = parser.parse_args()
 
     midi_relay(
-        gain=args.gain,
+        gain_db=args.gain,
         sample_rate=args.sample_rate,
         min_level=args.min_level
     )
