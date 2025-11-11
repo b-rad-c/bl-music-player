@@ -234,7 +234,7 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True,
                     elif level > 1.0:
                         level = 1.0
                     
-                    print(f'level: {level:.5f}')
+                    # print(f'level: {level:.5f}')
                     yield level
                     
                     # Clear buffer for next window
@@ -258,10 +258,10 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True,
 
     print('exiting samples_from_mic')
 
-def midi_relay(gain_db=46.0, sample_rate=24, min_level=0.0001) -> None:
+def midi_relay(gain_db=46.0, sample_rate=24, min_level=0.0001, window_size=None) -> None:
     port = mido.open_output(midi_device, virtual=True)
     try:
-        for sample in samples_from_mic(gain_db=gain_db, sample_rate=sample_rate, min_level=min_level):
+        for sample in samples_from_mic(gain_db=gain_db, sample_rate=sample_rate, min_level=min_level, window_size=window_size):
             port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
     finally:
         port.close()
@@ -269,14 +269,16 @@ def midi_relay(gain_db=46.0, sample_rate=24, min_level=0.0001) -> None:
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='MIDI Relay - run this via cli and select sync from microphone in cli')
-    parser.add_argument('--gain', '-g', type=float, default=46.0, help='Gain in decibels (dB). Typical range: 20-60 dB')
-    parser.add_argument('--sample-rate', '-sr', type=int, default=24, help='Sample rate for microphone input')
+    parser.add_argument('--gain', '-g', type=float, default=25.0, help='Gain in decibels (dB). Typical range: 20-60 dB')
+    parser.add_argument('--sample-rate', '-sr', type=int, default=60, help='Sample rate for microphone input')
     parser.add_argument('--min-level', '-ml', type=float, default=0.0001, help='Minimum level threshold')
+    parser.add_argument('--window-size', '-ws', type=int, default=4, help='Window size for RMS calculation (defaults to sample_rate)')
 
     args = parser.parse_args()
 
     midi_relay(
         gain_db=args.gain,
         sample_rate=args.sample_rate,
-        min_level=args.min_level
+        min_level=args.min_level,
+        window_size=args.window_size
     )
