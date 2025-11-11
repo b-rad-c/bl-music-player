@@ -19,6 +19,9 @@
 # (c) 2021, Blender Foundation - Paul Golter
 
 import subprocess
+import sys
+import os
+import time
 from typing import Dict, Optional, Tuple
 import bpy
 import mido
@@ -163,27 +166,27 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 
 midi_device = 'bl-music-player-midi'
 
-def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001):
-
+def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001, quiet=True, window_size=None):
     """
     ffmpeg -f avfoundation -list_devices true -i ""
     ffmpeg -f avfoundation -i ":2" -ac 1 -ar 441000 -t 5 mic.wav
 
     NOTE: run this is a terminal outside of VSCode
-
     """
-
-    # ffmpeg -loglevel quiet -f avfoundation -i ":2" -f s16le -ac 1 -ar 30 -t 5 -
-    args = [
-        'ffmpeg',
-        '-loglevel', 'quiet',
+    
+    # If no window_size specified, use sample_rate (1 second of samples)
+    if window_size is None:
+        window_size = sample_rate
+    
+    args = ['ffmpeg']
+    if quiet:
+        args += ['-loglevel', 'quiet']
+    args += [
         '-f', 'avfoundation',
         '-i', ':2',
         '-f', 's16le',
         '-ac', '1',
-        #'-c:a', 'pcm_u24le', 
         '-ar', f'{sample_rate}',
-        # '-t', '30', 
         '-'
     ]
     
@@ -192,22 +195,38 @@ def samples_from_mic(gain=175.0, sample_rate=24, min_level=0.0001):
 
     max_value = (2 ** 16) / 2 - 1
     increment = 1 / max_value
+    
+    # Buffer to hold samples for RMS calculation
+    sample_buffer = []
 
     try:
-        
         while process.poll() is None:
-
             buffer = process.stdout.read(2)
             
             if buffer:
-                value = (abs(int.from_bytes(buffer, 'little', signed=True)) * increment) * gain
-                if value < min_level:
-                    value = 0.0
-                elif value > 1.0:
-                    value = 1.0
-                # print(f'value: {value:.5f}')
-                yield value
-
+                # Get the raw sample value (keep signed for proper RMS)
+                raw_value = int.from_bytes(buffer, 'little', signed=True) * increment
+                sample_buffer.append(raw_value)
+                
+                # Once we have enough samples, calculate RMS
+                if len(sample_buffer) >= window_size:
+                    # Calculate RMS (Root Mean Square)
+                    rms = (sum(s**2 for s in sample_buffer) / len(sample_buffer)) ** 0.5
+                    
+                    # Apply gain
+                    level = rms * gain
+                    
+                    # Apply thresholding and clamping
+                    if level < min_level:
+                        level = 0.0
+                    elif level > 1.0:
+                        level = 1.0
+                    
+                    print(f'level: {level:.5f}')
+                    yield level
+                    
+                    # Clear buffer for next window
+                    sample_buffer.clear()
             else:
                 print('no more data from ffmpeg, exiting.')
                 break
@@ -238,7 +257,7 @@ def midi_relay(gain=175.0, sample_rate=24, min_level=0.0001) -> None:
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='MIDI Relay - run this via cli and select sync from microphone in cli')
-    parser.add_argument('--gain', '-g', type=float, default=175.0, help='Gain multiplier for microphone input')
+    parser.add_argument('--gain', '-g', type=float, default=200.0, help='Gain multiplier for microphone input')
     parser.add_argument('--sample-rate', '-sr', type=int, default=24, help='Sample rate for microphone input')
     parser.add_argument('--min-level', '-ml', type=float, default=0.0001, help='Minimum level threshold')
 
