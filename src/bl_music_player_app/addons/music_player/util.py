@@ -24,6 +24,7 @@ import os
 import time
 import math
 from typing import Dict, Optional, Tuple
+from dataclasses import dataclass
 import bpy
 import mido
 
@@ -165,10 +166,20 @@ def load_and_bake_audio(context, sound_path:str, background:bool=False) -> None:
 # audio functions
 #
 
-midi_device = 'bl-music-player-midi'
+MIDI_DEVICE_NAME = 'bl-music-player-midi'
 
-def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True, 
-                     smoothing=0.0, compression_threshold=0.7, compression_ratio=4.0):
+@dataclass
+class MicSampleConfig:
+    """Configuration for microphone sampling and processing."""
+    gain_db: float = 46.0
+    sample_rate: int = 24
+    min_level: float = 0.0001
+    quiet: bool = True
+    smoothing: float = 0.0
+    compression_threshold: float = 0.7
+    compression_ratio: float = 4.0
+
+def samples_from_mic(config: MicSampleConfig):
     """
     ffmpeg -f avfoundation -list_devices true -i ""
     ffmpeg -f avfoundation -i ":2" -ac 1 -ar 441000 -t 5 mic.wav
@@ -176,29 +187,30 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True,
     NOTE: run this is a terminal outside of VSCode
     
     Args:
-        gain_db: Gain in decibels (dB). 0 dB = no change, +6 dB = double, +20 dB = 10x
-                 Typical range: 20-60 dB for microphone input
-        sample_rate: Samples per second to read from microphone
-        min_level: Minimum threshold below which level is set to 0
-        quiet: Suppress ffmpeg output
-        smoothing: Exponential smoothing factor (0.0-1.0). 0=no smoothing, 0.5=moderate, 0.9=heavy
-        compression_threshold: Level above which compression is applied (0.0-1.0)
-        compression_ratio: Ratio of compression above threshold (1.0=none, 4.0=4:1, inf=limiting)
+        config: MicSampleConfig containing:
+            gain_db: Gain in decibels (dB). 0 dB = no change, +6 dB = double, +20 dB = 10x
+                     Typical range: 20-60 dB for microphone input
+            sample_rate: Samples per second to read from microphone
+            min_level: Minimum threshold below which level is set to 0
+            quiet: Suppress ffmpeg output
+            smoothing: Exponential smoothing factor (0.0-1.0). 0=no smoothing, 0.5=moderate, 0.9=heavy
+            compression_threshold: Level above which compression is applied (0.0-1.0)
+            compression_ratio: Ratio of compression above threshold (1.0=none, 4.0=4:1, inf=limiting)
     """
     
     # Convert dB to linear gain (divide by 10 for power, 20 for amplitude)
-    gain = 10 ** (gain_db / 10.0)
+    gain = 10 ** (config.gain_db / 10.0)
 
     
     args = ['ffmpeg']
-    if quiet:
+    if config.quiet:
         args += ['-loglevel', 'quiet']
     args += [
         '-f', 'avfoundation',
         '-i', ':2',
         '-f', 's16le',
         '-ac', '1',
-        '-ar', f'{sample_rate}',
+        '-ar', f'{config.sample_rate}',
         '-'
     ]
     
@@ -228,22 +240,22 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True,
                 level = rms * gain
                 
                 # Apply compression if level exceeds threshold
-                if compression_ratio > 1.0 and level > compression_threshold:
+                if config.compression_ratio > 1.0 and level > config.compression_threshold:
                     # Amount over threshold
-                    over = level - compression_threshold
+                    over = level - config.compression_threshold
                     # Compress the overage
-                    compressed_over = over / compression_ratio
+                    compressed_over = over / config.compression_ratio
                     # Final level is threshold + compressed overage
-                    level = compression_threshold + compressed_over
+                    level = config.compression_threshold + compressed_over
                 
                 # Apply exponential smoothing
                 if smoothed_level is None:
                     smoothed_level = level
                 else:
-                    smoothed_level = smoothing * smoothed_level + (1 - smoothing) * level
+                    smoothed_level = config.smoothing * smoothed_level + (1 - config.smoothing) * level
                 
                 # Apply thresholding and clamping
-                if smoothed_level < min_level:
+                if smoothed_level < config.min_level:
                     smoothed_level = 0.0
                 elif smoothed_level > 1.0:
                     smoothed_level = 1.0
@@ -272,14 +284,10 @@ def samples_from_mic(gain_db=46.0, sample_rate=24, min_level=0.0001, quiet=True,
 
     print('exiting samples_from_mic')
 
-def midi_relay(gain_db=46.0, sample_rate=24, min_level=0.0001, 
-               smoothing=0.0, compression_threshold=0.7, compression_ratio=4.0) -> None:
-    port = mido.open_output(midi_device, virtual=True)
+def midi_relay(config: MicSampleConfig) -> None:
+    port = mido.open_output(MIDI_DEVICE_NAME, virtual=True)
     try:
-        for sample in samples_from_mic(gain_db=gain_db, sample_rate=sample_rate, min_level=min_level, 
-                                       smoothing=smoothing, 
-                                       compression_threshold=compression_threshold, 
-                                       compression_ratio=compression_ratio):
+        for sample in samples_from_mic(config):
             port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
     finally:
         port.close()
@@ -296,7 +304,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    midi_relay(
+    config = MicSampleConfig(
         gain_db=args.gain,
         sample_rate=args.sample_rate,
         min_level=args.min_level,
@@ -304,3 +312,5 @@ if __name__ == '__main__':
         compression_threshold=args.compression_threshold,
         compression_ratio=args.compression_ratio
     )
+
+    midi_relay(config)

@@ -188,7 +188,7 @@ class MP_OP_sync_to_microphone(bpy.types.Operator):
         global midi_port
         if midi_port is None:
             print('Syncing visualizer to microphone input...')
-            midi_port = mido.open_input(util.midi_device, callback=lambda msg: on_incoming_midi_msg(msg))
+            midi_port = mido.open_input(util.MIDI_DEVICE_NAME, callback=lambda msg: on_incoming_midi_msg(msg))
         else:
             midi_port.close()
             midi_port = None
