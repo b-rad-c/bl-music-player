@@ -387,11 +387,25 @@ def samples_from_mic(config: MicSampleConfig):
 
     print('exiting samples_from_mic')
 
-def midi_relay(config: MicSampleConfig, disable_midi=False, display_output=False) -> None:
-    port = mido.open_output(MIDI_DEVICE_NAME, virtual=True)
+def midi_relay(config: MicSampleConfig, disable_midi=False, display_output=False, stop_event=None) -> None:
+    """
+    Relay microphone samples to MIDI output.
+    
+    Args:
+        config: MicSampleConfig for microphone sampling
+        disable_midi: If True, don't send MIDI messages (for testing)
+        display_output: If True, print levels to console
+        stop_event: threading.Event that signals when to stop (optional)
+    """
+    port = mido.open_output(MIDI_DEVICE_NAME, virtual=True) if not disable_midi else None
     try:
         for sample in samples_from_mic(config):
-            if not disable_midi:
+            # Check if we should stop
+            if stop_event is not None and stop_event.is_set():
+                print('Stop event detected, exiting midi_relay')
+                break
+            
+            if not disable_midi and port is not None:
                 # Always send full signal on control 1
                 port.send(mido.Message('control_change', channel=0, control=1, value=int(sample.full_signal * 127)))
                 
@@ -407,7 +421,8 @@ def midi_relay(config: MicSampleConfig, disable_midi=False, display_output=False
                       f'low_mid: {sample.low_mid:.3f}, high_mid: {sample.high_mid:.3f}, '
                       f'high: {sample.high:.3f}')
     finally:
-        port.close()
+        if port is not None:
+            port.close()
 
 if __name__ == '__main__':
     import argparse

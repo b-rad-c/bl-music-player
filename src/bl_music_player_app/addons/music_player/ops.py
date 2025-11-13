@@ -24,6 +24,7 @@ import json
 import webbrowser
 import time 
 import subprocess
+import threading
 
 from pathlib import Path
 from typing import Optional, List, Callable, Set
@@ -108,7 +109,9 @@ def dump(context, full=False):
 # midi
 #
 
-midi_port:mido.ports.BasePort = None
+midi_port: mido.ports.BasePort = None
+mic_thread: Optional[threading.Thread] = None
+mic_thread_stop_event: Optional[threading.Event] = None
 
 def redraw_hack():
     # trick to update the GUI
@@ -124,18 +127,6 @@ def on_incoming_midi_msg(msg:mido.Message):
         
         bpy.data.objects['audio signal - full']['signal'] = value
         bpy.data.objects['audio signal - full'].location = (0, 0, 0)
-
-        # bpy.data.objects['audio signal - low']['signal'] = value
-        # bpy.data.objects['audio signal - low'].location = (0, 0, 0)
-
-        # bpy.data.objects['audio signal - low mid']['signal'] = value
-        # bpy.data.objects['audio signal - low mid'].location = (0, 0, 0)
-        
-        # bpy.data.objects['audio signal - high mid']['signal'] = value
-        # bpy.data.objects['audio signal - high mid'].location = (0, 0, 0)
-
-        # bpy.data.objects['audio signal - high']['signal'] = value
-        # bpy.data.objects['audio signal - high'].location = (0, 0, 0)
     
     elif msg.control == 2:
         value = msg.value / 127
@@ -170,35 +161,6 @@ def on_incoming_midi_msg(msg:mido.Message):
 # visualizer ops
 #
 
-# max_value = (2 ** 16) / 2 - 1
-# increment = 1 / max_value
-# min_level = 0.001
-# gain = 175.0
-
-# def handle_microphone_sample():
-#     print('handle_microphone_sample()')
-#     global ff_mic
-#     print(f'ff_mic: {ff_mic}')
-#     if ff_mic.poll() is not None:
-#         ff_mic = None
-#         return None  # process ended, stop the timer. 
-#     print('reading microphone input...')
-    
-#     buffer = ff_mic.stdout.read(2)
-
-#     print(buffer)
-
-#     if buffer:
-#         value = (abs(int.from_bytes(buffer, 'little', signed=True)) * increment) * gain
-#         if value < min_level:
-#             value = 0.0
-#         elif value > 1.0:
-#             value = 1.0
-#         print(f'mic value: {value:.5f}')
-#         bpy.data.objects['audio signal - full']['signal'] = value
-
-#     return 0
-
 class MP_OP_sync_to_microphone(bpy.types.Operator):
 
     bl_idname = 'music_player.sync_to_microphone'
@@ -206,34 +168,75 @@ class MP_OP_sync_to_microphone(bpy.types.Operator):
     bl_description = 'Sync the visualizer to the microphone input.'
 
     def execute(self, context: bpy.types.Context) -> Set[str]:
-        bpy.ops.screen.animation_cancel()
-        #bpy.ops.screen.animation_play(sync=True)
-
         global midi_port
-        if midi_port is None:
-            print('Syncing visualizer to microphone input...')
-            midi_port = mido.open_input(util.MIDI_DEVICE_NAME, callback=lambda msg: on_incoming_midi_msg(msg))
+        global mic_thread
+        global mic_thread_stop_event
+
+        # Check if thread is already running
+        if mic_thread is not None and mic_thread.is_alive():
+            # Stop the thread
+            print('Stopping microphone sync thread...')
+            if mic_thread_stop_event is not None:
+                mic_thread_stop_event.set()
+            mic_thread.join(timeout=2.0)
+            mic_thread = None
+            mic_thread_stop_event = None
+            
+            # Close MIDI port
+            if midi_port is not None:
+                midi_port.close()
+                midi_port = None
+            
+            print('Microphone sync stopped.')
         else:
-            midi_port.close()
-            midi_port = None
-            print('Stopped syncing visualizer to microphone input.')
+            # Start the thread
+            print('Starting microphone sync thread...')
+            bpy.ops.screen.animation_cancel()
+            
+            # Create stop event and thread
+            mic_thread_stop_event = threading.Event()
+            
+            def run_mic_sampling():
+                """Thread function to run microphone sampling."""
+                try:
+                    # Create configuration for microphone sampling
+                    config = util.MicSampleConfig(
+                        gain_db=25.0,
+                        sample_rate=44100,
+                        output_rate=30,
+                        fft_size=2048,
+                        min_level=0.0001,
+                        smoothing=0.5,
+                        compression_threshold=0.7,
+                        compression_ratio=4.0,
+                        use_fft=True
+                    )
+                    
+                    # Run midi_relay which will stream samples
+                    # Pass the stop event so the thread can be cleanly terminated
+                    util.midi_relay(config, stop_event=mic_thread_stop_event)
+                    
+                except Exception as e:
+                    print(f'Error in microphone sampling thread: {e}')
+                    import traceback
+                    traceback.print_exc()
+            
+            mic_thread = threading.Thread(target=run_mic_sampling, daemon=True)
+            mic_thread.start()
+            print('Microphone sync thread started.')
 
-        # graph_area = util.find_area(bpy.context, 'GRAPH_EDITOR')
-        # graph_context = util.get_context_for_area(graph_area)
-
-        #bpy.ops.screen.animation_play(sync=True)
-
-        #bpy.app.timers.register(handle_microphone_sample, first_interval=.1, persistent=True)
-
-        # start = time.time()
-        # with context.temp_override(**graph_context):
-        #     for sample in util.samples_from_mic():
-        #         print(sample)
-        #         bpy.data.objects['audio signal - full']['signal'] = sample
-        #         if time.time() - start > 10.0:
-        #             break
-
-        # print('Ending sync to microphone input.')
+            # Open MIDI port for input
+            if midi_port is None:
+                for _ in range(15):
+                    try:
+                        midi_port = mido.open_input(util.MIDI_DEVICE_NAME, callback=lambda msg: on_incoming_midi_msg(msg))
+                        break
+                    except OSError:
+                        # OSError will be thrown until the MIDI device is available
+                        time.sleep(.333)
+                else:
+                    print(f'Failed to open MIDI port: {util.MIDI_DEVICE_NAME}')
+                    raise RuntimeError(f'Failed to open MIDI port: {util.MIDI_DEVICE_NAME}')
 
         return {'FINISHED'}
     
