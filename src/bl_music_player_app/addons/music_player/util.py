@@ -171,10 +171,11 @@ MIDI_DEVICE_NAME = 'bl-music-player-midi'
 
 class FrequencyBands(NamedTuple):
     """Audio levels for 4-band EQ."""
-    low: float       # Bass: 20-250 Hz
-    low_mid: float   # Low-mid: 250-2000 Hz
-    high_mid: float  # High-mid: 2000-6000 Hz
-    high: float      # Treble: 6000-20000 Hz
+    full_signal: float  # Full spectrum RMS
+    low: float          # Bass: 20-250 Hz
+    low_mid: float      # Low-mid: 250-2000 Hz
+    high_mid: float     # High-mid: 2000-6000 Hz
+    high: float         # Treble: 6000-20000 Hz
 
 @dataclass
 class MicSampleConfig:
@@ -209,10 +210,10 @@ def samples_from_mic(config: MicSampleConfig):
             smoothing: Exponential smoothing factor (0.0-1.0). 0=no smoothing, 0.5=moderate, 0.9=heavy
             compression_threshold: Level above which compression is applied (0.0-1.0)
             compression_ratio: Ratio of compression above threshold (1.0=none, 4.0=4:1, inf=limiting)
-            use_fft: If True, yield FrequencyBands; if False, yield single RMS value
+            use_fft: If True, yield FrequencyBands with band data; if False, yield FrequencyBands with only full_signal
     
     Yields:
-        FrequencyBands if use_fft=True, otherwise float
+        FrequencyBands (always) - bands will be -1.0 if use_fft=False
     """
     
     # Convert dB to linear gain (divide by 10 for power, 20 for amplitude)
@@ -248,7 +249,10 @@ def samples_from_mic(config: MicSampleConfig):
     samples_since_last_output = 0
 
     def process_audio(samples):
-        """Process audio samples and return levels (FrequencyBands or float)."""
+        """Process audio samples and return levels (FrequencyBands)."""
+        # Always calculate full signal RMS
+        full_rms = np.sqrt(np.mean(np.array(samples) ** 2)) * gain
+        
         if config.use_fft and len(samples) >= config.fft_size:
             # Use FFT to get frequency bands
             # Apply Hanning window to reduce spectral leakage
@@ -293,45 +297,22 @@ def samples_from_mic(config: MicSampleConfig):
             scale_factor = 2.0 / len(samples)
             levels = [level * scale_factor * gain for level in band_levels]
             
-            return FrequencyBands(*levels)
+            return FrequencyBands(full_rms, *levels)
         else:
-            # Simple RMS calculation
-            rms = np.sqrt(np.mean(np.array(samples) ** 2))
-            return rms * gain
+            # Simple RMS mode - only full signal, bands are -1.0
+            return FrequencyBands(full_rms, -1.0, -1.0, -1.0, -1.0)
 
     def apply_processing(levels):
         """Apply compression, smoothing, and clamping to levels."""
         nonlocal smoothed_bands
         
-        if isinstance(levels, FrequencyBands):
-            # Process each band separately
-            processed = []
-            for i, level in enumerate(levels):
-                # Apply compression
-                if config.compression_ratio > 1.0 and level > config.compression_threshold:
-                    over = level - config.compression_threshold
-                    compressed_over = over / config.compression_ratio
-                    level = config.compression_threshold + compressed_over
-                
-                # Apply smoothing
-                if smoothed_bands is None:
-                    smoothed_level = level
-                else:
-                    smoothed_level = config.smoothing * smoothed_bands[i] + (1 - config.smoothing) * level
-                
-                # Apply thresholding and clamping
-                if smoothed_level < config.min_level:
-                    smoothed_level = 0.0
-                elif smoothed_level > 1.0:
-                    smoothed_level = 1.0
-                
-                processed.append(smoothed_level)
-            
-            smoothed_bands = processed
-            return FrequencyBands(*processed)
-        else:
-            # Process single level
-            level = levels
+        # Always process as FrequencyBands now
+        processed = []
+        for i, level in enumerate(levels):
+            # Skip processing for bands marked as -1.0 (FFT disabled)
+            if level < 0:
+                processed.append(-1.0)
+                continue
             
             # Apply compression
             if config.compression_ratio > 1.0 and level > config.compression_threshold:
@@ -343,7 +324,7 @@ def samples_from_mic(config: MicSampleConfig):
             if smoothed_bands is None:
                 smoothed_level = level
             else:
-                smoothed_level = config.smoothing * smoothed_bands + (1 - config.smoothing) * level
+                smoothed_level = config.smoothing * smoothed_bands[i] + (1 - config.smoothing) * level
             
             # Apply thresholding and clamping
             if smoothed_level < config.min_level:
@@ -351,8 +332,10 @@ def samples_from_mic(config: MicSampleConfig):
             elif smoothed_level > 1.0:
                 smoothed_level = 1.0
             
-            smoothed_bands = smoothed_level
-            return smoothed_level
+            processed.append(smoothed_level)
+        
+        smoothed_bands = processed
+        return FrequencyBands(*processed)
 
     try:
         while process.poll() is None:
@@ -375,10 +358,11 @@ def samples_from_mic(config: MicSampleConfig):
                     processed_levels = apply_processing(levels)
                     
                     if config.use_fft:
-                        print(f'bands - low: {processed_levels.low:.3f}, low_mid: {processed_levels.low_mid:.3f}, '
-                              f'high_mid: {processed_levels.high_mid:.3f}, high: {processed_levels.high:.3f}')
+                        print(f'bands - full: {processed_levels.full_signal:.3f}, low: {processed_levels.low:.3f}, '
+                              f'low_mid: {processed_levels.low_mid:.3f}, high_mid: {processed_levels.high_mid:.3f}, '
+                              f'high: {processed_levels.high:.3f}')
                     else:
-                        print(f'level: {processed_levels:.5f}')
+                        print(f'full_signal: {processed_levels.full_signal:.5f}')
                     
                     yield processed_levels
                     
@@ -399,10 +383,7 @@ def samples_from_mic(config: MicSampleConfig):
 
     except KeyboardInterrupt:
         print('KeyboardInterrupt detected, terminating process...')
-        if config.use_fft:
-            yield FrequencyBands(0.0, 0.0, 0.0, 0.0)
-        else:
-            yield 0.0
+        yield FrequencyBands(0.0, 0.0, 0.0, 0.0, 0.0)
         process.kill()
         process.wait()
 
@@ -417,15 +398,15 @@ def midi_relay(config: MicSampleConfig) -> None:
     port = mido.open_output(MIDI_DEVICE_NAME, virtual=True)
     try:
         for sample in samples_from_mic(config):
-            if isinstance(sample, FrequencyBands):
-                # Send each band on a different MIDI control
+            # Always send full signal on control 1
+            port.send(mido.Message('control_change', channel=0, control=1, value=int(sample.full_signal * 127)))
+            
+            # Only send band data if FFT is enabled (bands will be -1.0 if disabled)
+            if sample.low >= 0:
                 port.send(mido.Message('control_change', channel=0, control=2, value=int(sample.low * 127)))
                 port.send(mido.Message('control_change', channel=0, control=3, value=int(sample.low_mid * 127)))
                 port.send(mido.Message('control_change', channel=0, control=4, value=int(sample.high_mid * 127)))
                 port.send(mido.Message('control_change', channel=0, control=5, value=int(sample.high * 127)))
-            else:
-                # Single value mode
-                port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
     finally:
         port.close()
 
