@@ -32,10 +32,10 @@ def remove_default_keymaps():
         for km in value.keymaps:
             for kmi in km.keymap_items:
                 if kmi.type in ['WHEELINMOUSE', 'WHEELOUTMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE']:
-                    print(f'    removed {km.name} - {kmi.idname} - {kmi.type} {kmi.value} ({kmi.active})')
+                    # print(f'    removed {km.name} - {kmi.idname} - {kmi.type} {kmi.value} ({kmi.active})')
                     km.keymap_items.remove(kmi)
                 elif '3d' in km.name.lower() and kmi.type in ['LEFTMOUSE', 'RIGHTMOUSE', 'MIDDLEMOUSE', 'MOUSEMOVE', 'INBETWEEN_MOUSEMOVE']:
-                    print(f'    >> {km.name} - {kmi.idname} - {kmi.type} {kmi.value} ({kmi.active})')
+                    # print(f'    >> {km.name} - {kmi.idname} - {kmi.type} {kmi.value} ({kmi.active})')
                     km.keymap_items.remove(kmi)
 
 def register_keymaps():

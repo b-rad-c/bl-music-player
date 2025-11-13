@@ -974,6 +974,23 @@ def browser2_drawer(self, context):
     end_line()
 
 #
+# UI Panels
+#
+
+class MP_PT_visualizer_settings(bpy.types.Panel):
+    """Panel for visualizer settings in the Properties window"""
+    bl_label = "Music Player Visualizer"
+    bl_idname = "MP_PT_visualizer_settings"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "scene"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text="Hello World - Visualizer Settings")
+        layout.label(text="Configuration panel coming soon!")
+
+#
 # register
 #
 
@@ -991,7 +1008,8 @@ classes = [
     MP_OT_fullscreen,
     MP_TEXT_SCROLL_UP,
     MP_TEXT_SCROLL_DOWN,
-    MP_ON_CLICK
+    MP_ON_CLICK,
+    MP_PT_visualizer_settings
 ]
 load_post_handlers = [init_3d_viewport, init_filebrowser, init_visualizer]
 draw_handlers_fb: List[Callable] = []

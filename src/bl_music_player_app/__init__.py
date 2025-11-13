@@ -18,15 +18,19 @@
 
 import os
 
-import blf
+import bl_ui
 import bpy
 from bl_app_override.helpers import AppOverrideState
 
 
-def draw_left_override(self, context: bpy.types.Context):
+def draw_topbar_upper_bar_left(self, context: bpy.types.Context):
     layout: bpy.types.UILayout = self.layout
     bpy.types.TOPBAR_MT_editor_menus.draw_collapsible(context, layout)
 
+def draw_properties_header(self, context: bpy.types.Context):
+    self.layout.label(text='Music Player Configuration', icon='MUSIC')
+
+empty = lambda self, context: None
 
 class AppStateStore(AppOverrideState):
     # Just provides data & callbacks for AppOverrideState
@@ -36,20 +40,49 @@ class AppStateStore(AppOverrideState):
     def class_ignore():
         classes = []
 
-        bpy.types.STATUSBAR_HT_header.draw = lambda self, context: None
-        bpy.types.FILEBROWSER_HT_header.draw = lambda self, context: None
-        bpy.types.GRAPH_HT_header.draw = lambda self, context: None
-        bpy.types.SEQUENCER_HT_header.draw = lambda self, context: None
-        bpy.types.VIEW3D_HT_header.draw = lambda self, context: None
-        bpy.types.TOPBAR_HT_upper_bar.draw_left = draw_left_override
-        bpy.types.TOPBAR_HT_upper_bar.draw_right = lambda self, context: None
-        bpy.types.TOPBAR_MT_editor_menus.draw = lambda self, context: None
-        bpy.types.SEQUENCER_PT_tools_active.draw = lambda self, context: None
+        bpy.types.STATUSBAR_HT_header.draw = empty
+        bpy.types.FILEBROWSER_HT_header.draw = empty
+        bpy.types.GRAPH_HT_header.draw = empty
+        bpy.types.SEQUENCER_HT_header.draw = empty
+        bpy.types.VIEW3D_HT_header.draw = empty
+        bpy.types.TOPBAR_HT_upper_bar.draw_left = draw_topbar_upper_bar_left
+        bpy.types.TOPBAR_HT_upper_bar.draw_right = empty
+        bpy.types.TOPBAR_MT_editor_menus.draw = empty
+        bpy.types.SEQUENCER_PT_tools_active.draw = empty
         bpy.types.SEQUENCER_PT_tools_active.draw_cls = lambda cls, layout, context, detect_layout=True, scale_y=1.75: None
-        bpy.types.VIEW3D_PT_overlay.draw = lambda self, context: None
-        bpy.types.VIEW3D_PT_overlay_guides.draw = lambda self, context: None
-        bpy.types.VIEW3D_PT_view3d_lock.draw = lambda self, context: None
-        bpy.types.VIEW3D_MT_view_cameras.draw = lambda self, context: None
+        bpy.types.VIEW3D_PT_overlay.draw = empty
+        bpy.types.VIEW3D_PT_overlay_guides.draw = empty
+        bpy.types.VIEW3D_PT_view3d_lock.draw = empty
+        bpy.types.VIEW3D_MT_view_cameras.draw = empty
+
+
+        #bpy.types.PROPERTIES_PT_navigation_bar.draw = empty
+        #bpy.types.PROPERTIES_PT_options.draw = empty
+
+        #bpy.types.PROPERTIES_HT_header.draw = draw_properties_header
+
+        # bl_ui.space_properties.PROPERTIES_HT_header.draw = empty
+        #bpy.types.SpaceProperties.show_region_header = False       
+
+        classes = []
+
+        def func(cls):
+            ignore = False
+            if cls.__name__.startswith('PROPERTIES'):
+                #ignore = True
+                print('Ignoring PROPERTIES class:', cls.__name__)
+            if cls.__name__.startswith('OBJECT'):
+                #ignore = True
+                print('Ignoring OBJECT class:', cls.__name__)
+
+            if ignore:
+                pass
+
+            return ignore
+
+        for cls in filter(func, bpy.types.Panel.__subclasses__()):
+            classes.append(cls)
+
         # for attr in dir(bpy.types):
         #     if ('VIEW3D' in attr or 'view3d' in attr) and not 'tools' in attr:
         #         print(attr)
@@ -58,6 +91,8 @@ class AppStateStore(AppOverrideState):
         # for name in dir(ta):
         #     print(name, getattr(ta, name))
         # breakpoint()
+
+        print('done ignoring classes')
 
         return classes
 
