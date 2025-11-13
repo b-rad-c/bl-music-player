@@ -68,15 +68,16 @@ class AppStateStore(AppOverrideState):
 
         def func(cls):
             ignore = False
-            if cls.__name__.startswith('PROPERTIES'):
-                #ignore = True
-                print('Ignoring PROPERTIES class:', cls.__name__)
-            if cls.__name__.startswith('OBJECT'):
-                #ignore = True
-                print('Ignoring OBJECT class:', cls.__name__)
-
-            if ignore:
-                pass
+            # if cls.__name__.startswith('PROPERTIES'):
+            #     ignore = True
+            #     print('Ignoring PROPERTIES class:', cls.__name__)
+            # if cls.__name__.startswith('OBJECT'):
+            #     ignore = True
+            #     print('Ignoring OBJECT class:', cls.__name__)
+            # Ignore Scene context panels except our custom one
+            if hasattr(cls, 'bl_context') and cls.bl_context == 'scene' and cls.__name__ != 'MP_PT_visualizer_settings':
+                ignore = True
+                print('Ignoring Scene panel:', cls.__name__)
 
             return ignore
 

@@ -81,6 +81,23 @@ def MP_TOPBAR_draw(self, _) -> None:
     self.layout.menu('MP_TOPBAR_MT_window_menu')
 
 #
+# UI Panels
+#
+
+class MP_PT_visualizer_settings(bpy.types.Panel):
+    """Panel for visualizer settings in the Properties window"""
+    bl_label = 'Music Player Visualizer'
+    bl_idname = 'MP_PT_visualizer_settings'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Hello World - Visualizer Settings')
+        layout.label(text='Configuration panel coming soon!')
+
+#
 # register
 #
 
@@ -89,7 +106,8 @@ classes = [
     MP_TOPBAR_MT_browser_menu,
     MP_TOPBAR_MT_player_menu, 
     MP_TOPBAR_MT_visualizer_menu,
-    MP_TOPBAR_MT_window_menu
+    MP_TOPBAR_MT_window_menu,
+    MP_PT_visualizer_settings
 ]
 
 
