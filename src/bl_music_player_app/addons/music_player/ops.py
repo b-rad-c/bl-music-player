@@ -119,22 +119,46 @@ def redraw_hack():
                 area.tag_redraw()
 
 def on_incoming_midi_msg(msg:mido.Message):
-    value = msg.value / 127
-    # print(f'value: {value}')
-    bpy.data.objects['audio signal - full']['signal'] = value
-    bpy.data.objects['audio signal - full'].location = (0, 0, 0)
+    if msg.control == 1:
+        value = msg.value / 127
+        
+        bpy.data.objects['audio signal - full']['signal'] = value
+        bpy.data.objects['audio signal - full'].location = (0, 0, 0)
 
-    bpy.data.objects['audio signal - low']['signal'] = value
-    bpy.data.objects['audio signal - low'].location = (0, 0, 0)
+        bpy.data.objects['audio signal - low']['signal'] = value
+        bpy.data.objects['audio signal - low'].location = (0, 0, 0)
 
-    bpy.data.objects['audio signal - low mid']['signal'] = value
-    bpy.data.objects['audio signal - low mid'].location = (0, 0, 0)
+        bpy.data.objects['audio signal - low mid']['signal'] = value
+        bpy.data.objects['audio signal - low mid'].location = (0, 0, 0)
+        
+        bpy.data.objects['audio signal - high mid']['signal'] = value
+        bpy.data.objects['audio signal - high mid'].location = (0, 0, 0)
+
+        bpy.data.objects['audio signal - high']['signal'] = value
+        bpy.data.objects['audio signal - high'].location = (0, 0, 0)
     
-    bpy.data.objects['audio signal - high mid']['signal'] = value
-    bpy.data.objects['audio signal - high mid'].location = (0, 0, 0)
+    elif msg.control == 2:
+        value = msg.value / 127
+        bpy.data.objects['audio signal - low']['signal'] = value
+        bpy.data.objects['audio signal - low'].location = (0, 0, 0)
+    
+    elif msg.control == 3:
+        value = msg.value / 127
+        bpy.data.objects['audio signal - low mid']['signal'] = value
+        bpy.data.objects['audio signal - low mid'].location = (0, 0, 0)
 
-    bpy.data.objects['audio signal - high']['signal'] = value
-    bpy.data.objects['audio signal - high'].location = (0, 0, 0)
+    elif msg.control == 4:
+        value = msg.value / 127
+        bpy.data.objects['audio signal - high mid']['signal'] = value
+        bpy.data.objects['audio signal - high mid'].location = (0, 0, 0)
+
+    elif msg.control == 5:
+        value = msg.value / 127
+        bpy.data.objects['audio signal - high']['signal'] = value
+        bpy.data.objects['audio signal - high'].location = (0, 0, 0)
+    
+    else:
+        print(f'Unhandled MIDI control message: {msg}')
 
     # update dependecy graph
     

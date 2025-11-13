@@ -419,10 +419,10 @@ def midi_relay(config: MicSampleConfig) -> None:
         for sample in samples_from_mic(config):
             if isinstance(sample, FrequencyBands):
                 # Send each band on a different MIDI control
-                port.send(mido.Message('control_change', channel=0, control=1, value=int(sample.low * 127)))
-                port.send(mido.Message('control_change', channel=0, control=2, value=int(sample.low_mid * 127)))
-                port.send(mido.Message('control_change', channel=0, control=3, value=int(sample.high_mid * 127)))
-                port.send(mido.Message('control_change', channel=0, control=4, value=int(sample.high * 127)))
+                port.send(mido.Message('control_change', channel=0, control=2, value=int(sample.low * 127)))
+                port.send(mido.Message('control_change', channel=0, control=3, value=int(sample.low_mid * 127)))
+                port.send(mido.Message('control_change', channel=0, control=4, value=int(sample.high_mid * 127)))
+                port.send(mido.Message('control_change', channel=0, control=5, value=int(sample.high * 127)))
             else:
                 # Single value mode
                 port.send(mido.Message('control_change', channel=0, control=1, value=int(sample * 127)))
