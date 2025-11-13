@@ -181,6 +181,7 @@ class MicSampleConfig:
     """Configuration for microphone sampling and processing."""
     gain_db: float = 46.0
     sample_rate: int = 44100  # Higher sample rate needed for FFT
+    output_rate: int = 30  # How many times per second to yield samples (fps)
     fft_size: int = 2048  # Window size for FFT (power of 2)
     min_level: float = 0.0001
     quiet: bool = True
@@ -200,7 +201,8 @@ def samples_from_mic(config: MicSampleConfig):
         config: MicSampleConfig containing:
             gain_db: Gain in decibels (dB). 0 dB = no change, +6 dB = double, +20 dB = 10x
                      Typical range: 20-60 dB for microphone input
-            sample_rate: Samples per second to read from microphone
+            sample_rate: Samples per second to read from microphone (44100 for good FFT)
+            output_rate: How many times per second to yield samples (e.g., 24-60 fps)
             fft_size: Window size for FFT analysis (power of 2, e.g., 2048)
             min_level: Minimum threshold below which level is set to 0
             quiet: Suppress ffmpeg output
@@ -240,6 +242,10 @@ def samples_from_mic(config: MicSampleConfig):
     
     # Track smoothed levels for each band (or single level if not using FFT)
     smoothed_bands = None
+    
+    # For output rate throttling
+    samples_per_output = config.sample_rate / config.output_rate
+    samples_since_last_output = 0
 
     def process_audio(samples):
         """Process audio samples and return levels (FrequencyBands or float)."""
@@ -356,10 +362,14 @@ def samples_from_mic(config: MicSampleConfig):
                 # Get the raw sample value (keep signed for proper RMS/FFT)
                 raw_value = int.from_bytes(buffer, 'little', signed=True) * increment
                 sample_buffer.append(raw_value)
+                samples_since_last_output += 1
                 
-                # Process when we have enough samples
+                # Only process and yield when we've accumulated enough samples for output rate
+                should_output = samples_since_last_output >= samples_per_output
+                
+                # Process when we have enough samples AND it's time to output
                 target_size = config.fft_size if config.use_fft else 1
-                if len(sample_buffer) >= target_size:
+                if len(sample_buffer) >= target_size and should_output:
                     samples = np.array(sample_buffer)
                     levels = process_audio(samples)
                     processed_levels = apply_processing(levels)
@@ -371,6 +381,9 @@ def samples_from_mic(config: MicSampleConfig):
                         print(f'level: {processed_levels:.5f}')
                     
                     yield processed_levels
+                    
+                    # Reset output counter
+                    samples_since_last_output = 0
                     
                     # For FFT mode, use sliding window (keep last half of samples for overlap)
                     # For RMS mode, clear buffer
@@ -421,6 +434,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MIDI Relay - run this via cli and select sync from microphone in cli')
     parser.add_argument('--gain', '-g', type=float, default=25.0, help='Gain in decibels (dB). Typical range: 20-60 dB')
     parser.add_argument('--sample-rate', '-sr', type=int, default=44100, help='Sample rate for microphone input (44100 recommended for FFT)')
+    parser.add_argument('--output-rate', '-or', type=int, default=30, help='Output sample rate in fps (24-60 typical for animation)')
     parser.add_argument('--fft-size', '-fft', type=int, default=2048, help='FFT window size (power of 2)')
     parser.add_argument('--min-level', '-ml', type=float, default=0.0001, help='Minimum level threshold')
     parser.add_argument('--smoothing', '-s', type=float, default=0.0, help='Exponential smoothing (0.0-1.0): 0=none, 0.5=moderate, 0.9=heavy')
@@ -433,6 +447,7 @@ if __name__ == '__main__':
     config = MicSampleConfig(
         gain_db=args.gain,
         sample_rate=args.sample_rate,
+        output_rate=args.output_rate,
         fft_size=args.fft_size,
         min_level=args.min_level,
         smoothing=args.smoothing,
