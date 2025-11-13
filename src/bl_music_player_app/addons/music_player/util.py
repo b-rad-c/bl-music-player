@@ -357,13 +357,6 @@ def samples_from_mic(config: MicSampleConfig):
                     levels = process_audio(samples)
                     processed_levels = apply_processing(levels)
                     
-                    if config.use_fft:
-                        print(f'bands - full: {processed_levels.full_signal:.3f}, low: {processed_levels.low:.3f}, '
-                              f'low_mid: {processed_levels.low_mid:.3f}, high_mid: {processed_levels.high_mid:.3f}, '
-                              f'high: {processed_levels.high:.3f}')
-                    else:
-                        print(f'full_signal: {processed_levels.full_signal:.5f}')
-                    
                     yield processed_levels
                     
                     # Reset output counter
@@ -394,25 +387,33 @@ def samples_from_mic(config: MicSampleConfig):
 
     print('exiting samples_from_mic')
 
-def midi_relay(config: MicSampleConfig) -> None:
+def midi_relay(config: MicSampleConfig, disable_midi=False, display_output=False) -> None:
     port = mido.open_output(MIDI_DEVICE_NAME, virtual=True)
     try:
         for sample in samples_from_mic(config):
-            # Always send full signal on control 1
-            port.send(mido.Message('control_change', channel=0, control=1, value=int(sample.full_signal * 127)))
+            if not disable_midi:
+                # Always send full signal on control 1
+                port.send(mido.Message('control_change', channel=0, control=1, value=int(sample.full_signal * 127)))
+                
+                # Only send band data if FFT is enabled (bands will be -1.0 if disabled)
+                if sample.low >= 0:
+                    port.send(mido.Message('control_change', channel=0, control=2, value=int(sample.low * 127)))
+                    port.send(mido.Message('control_change', channel=0, control=3, value=int(sample.low_mid * 127)))
+                    port.send(mido.Message('control_change', channel=0, control=4, value=int(sample.high_mid * 127)))
+                    port.send(mido.Message('control_change', channel=0, control=5, value=int(sample.high * 127)))
             
-            # Only send band data if FFT is enabled (bands will be -1.0 if disabled)
-            if sample.low >= 0:
-                port.send(mido.Message('control_change', channel=0, control=2, value=int(sample.low * 127)))
-                port.send(mido.Message('control_change', channel=0, control=3, value=int(sample.low_mid * 127)))
-                port.send(mido.Message('control_change', channel=0, control=4, value=int(sample.high_mid * 127)))
-                port.send(mido.Message('control_change', channel=0, control=5, value=int(sample.high * 127)))
+            if display_output:
+                print(f'bands - full: {sample.full_signal:.3f}, low: {sample.low:.3f}, '
+                      f'low_mid: {sample.low_mid:.3f}, high_mid: {sample.high_mid:.3f}, '
+                      f'high: {sample.high:.3f}')
     finally:
         port.close()
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='MIDI Relay - run this via cli and select sync from microphone in cli')
+    parser.add_argument('--disable-midi', action='store_true', help='Disable MIDI output (for testing purposes)')
+    parser.add_argument('--display-output', action='store_true', help='Print output levels in console')
     parser.add_argument('--gain', '-g', type=float, default=25.0, help='Gain in decibels (dB). Typical range: 20-60 dB')
     parser.add_argument('--sample-rate', '-sr', type=int, default=44100, help='Sample rate for microphone input (44100 recommended for FFT)')
     parser.add_argument('--output-rate', '-or', type=int, default=30, help='Output sample rate in fps (24-60 typical for animation)')
@@ -437,4 +438,4 @@ if __name__ == '__main__':
         use_fft=args.use_fft
     )
 
-    midi_relay(config)
+    midi_relay(config, disable_midi=args.disable_midi, display_output=args.display_output)
