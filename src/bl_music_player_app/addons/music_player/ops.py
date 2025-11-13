@@ -199,18 +199,24 @@ class MP_OP_sync_to_microphone(bpy.types.Operator):
             def run_mic_sampling():
                 """Thread function to run microphone sampling."""
                 try:
-                    # Create configuration for microphone sampling
+                    # Get configuration from scene properties
+                    scene = context.scene
                     config = util.MicSampleConfig(
-                        gain_db=25.0,
-                        sample_rate=44100,
-                        output_rate=30,
-                        fft_size=2048,
-                        min_level=0.0001,
-                        smoothing=0.5,
-                        compression_threshold=0.7,
-                        compression_ratio=4.0,
-                        use_fft=True
+                        gain_db=scene.mp_gain_db,
+                        sample_rate=scene.mp_sample_rate,
+                        output_rate=scene.mp_output_rate,
+                        fft_size=scene.mp_fft_size,
+                        min_level=scene.mp_min_level,
+                        smoothing=scene.mp_smoothing,
+                        compression_threshold=scene.mp_compression_threshold,
+                        compression_ratio=scene.mp_compression_ratio,
+                        use_fft=scene.mp_use_fft,
+                        quiet=scene.mp_quiet
                     )
+                    
+                    print(f'Starting microphone sampling with config: gain_db={config.gain_db}, '
+                          f'sample_rate={config.sample_rate}, output_rate={config.output_rate}, '
+                          f'use_fft={config.use_fft}, smoothing={config.smoothing}')
                     
                     # Run midi_relay which will stream samples
                     # Pass the stop event so the thread can be cleanly terminated
