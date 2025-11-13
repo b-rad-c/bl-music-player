@@ -91,11 +91,43 @@ class MP_PT_visualizer_settings(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = 'scene'
+    bl_options = {'HIDE_HEADER'}
 
     def draw(self, context):
         layout = self.layout
-        layout.label(text='Hello World - Visualizer Settings')
-        layout.label(text='Configuration panel coming soon!')
+        scene = context.scene
+        
+        # Microphone sampling settings
+        box = layout.box()
+        box.label(text="Microphone Settings", icon='REC')
+        
+        col = box.column(align=True)
+        col.prop(scene, 'mp_gain_db', text='Gain (dB)')
+        col.prop(scene, 'mp_sample_rate', text='Sample Rate')
+        col.prop(scene, 'mp_output_rate', text='Output Rate (fps)')
+        
+        col.separator()
+        col.prop(scene, 'mp_use_fft', text='Use FFT (4-band EQ)')
+        col.prop(scene, 'mp_fft_size', text='FFT Size')
+        
+        # Processing settings
+        box = layout.box()
+        box.label(text="Processing", icon='MODIFIER')
+        
+        col = box.column(align=True)
+        col.prop(scene, 'mp_smoothing', text='Smoothing', slider=True)
+        col.prop(scene, 'mp_min_level', text='Min Level')
+        
+        col.separator()
+        col.prop(scene, 'mp_compression_threshold', text='Compression Threshold', slider=True)
+        col.prop(scene, 'mp_compression_ratio', text='Compression Ratio')
+        
+        # Debug settings
+        box = layout.box()
+        box.label(text="Debug", icon='CONSOLE')
+        col = box.column(align=True)
+        col.prop(scene, 'mp_quiet', text='Quiet Mode (hide ffmpeg output)')
+
 
 #
 # register
@@ -112,6 +144,86 @@ classes = [
 
 
 def register():
+    # Register Scene properties for MicSampleConfig
+    bpy.types.Scene.mp_gain_db = bpy.props.FloatProperty(
+        name="Gain (dB)",
+        description="Gain in decibels. Typical range: 20-60 dB",
+        default=25.0,
+        min=0.0,
+        max=100.0
+    )
+    
+    bpy.types.Scene.mp_sample_rate = bpy.props.IntProperty(
+        name="Sample Rate",
+        description="Microphone sample rate (44100 recommended for FFT)",
+        default=44100,
+        min=8000,
+        max=96000
+    )
+    
+    bpy.types.Scene.mp_output_rate = bpy.props.IntProperty(
+        name="Output Rate",
+        description="How many times per second to yield samples (fps)",
+        default=30,
+        min=1,
+        max=120
+    )
+    
+    bpy.types.Scene.mp_fft_size = bpy.props.IntProperty(
+        name="FFT Size",
+        description="FFT window size (power of 2)",
+        default=2048,
+        min=256,
+        max=8192
+    )
+    
+    bpy.types.Scene.mp_min_level = bpy.props.FloatProperty(
+        name="Min Level",
+        description="Minimum threshold below which level is set to 0",
+        default=0.0001,
+        min=0.0,
+        max=1.0,
+        precision=4
+    )
+    
+    bpy.types.Scene.mp_smoothing = bpy.props.FloatProperty(
+        name="Smoothing",
+        description="Exponential smoothing (0=none, 0.5=moderate, 0.9=heavy)",
+        default=0.5,
+        min=0.0,
+        max=1.0,
+        subtype='FACTOR'
+    )
+    
+    bpy.types.Scene.mp_compression_threshold = bpy.props.FloatProperty(
+        name="Compression Threshold",
+        description="Level above which compression is applied",
+        default=0.7,
+        min=0.0,
+        max=1.0,
+        subtype='FACTOR'
+    )
+    
+    bpy.types.Scene.mp_compression_ratio = bpy.props.FloatProperty(
+        name="Compression Ratio",
+        description="Ratio of compression above threshold (1.0=none, 4.0=4:1)",
+        default=4.0,
+        min=1.0,
+        max=20.0
+    )
+    
+    bpy.types.Scene.mp_use_fft = bpy.props.BoolProperty(
+        name="Use FFT",
+        description="Use FFT for 4-band EQ (if False, use simple RMS)",
+        default=True
+    )
+    
+    bpy.types.Scene.mp_quiet = bpy.props.BoolProperty(
+        name="Quiet Mode",
+        description="Suppress ffmpeg output",
+        default=True
+    )
+
     for cls in classes:
         bpy.utils.register_class(cls)
 
@@ -123,3 +235,15 @@ def unregister():
 
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
+    
+    # Unregister Scene properties
+    del bpy.types.Scene.mp_gain_db
+    del bpy.types.Scene.mp_sample_rate
+    del bpy.types.Scene.mp_output_rate
+    del bpy.types.Scene.mp_fft_size
+    del bpy.types.Scene.mp_min_level
+    del bpy.types.Scene.mp_smoothing
+    del bpy.types.Scene.mp_compression_threshold
+    del bpy.types.Scene.mp_compression_ratio
+    del bpy.types.Scene.mp_use_fft
+    del bpy.types.Scene.mp_quiet
